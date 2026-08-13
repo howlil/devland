@@ -1,0 +1,34 @@
+schema: devland.project/v0
+project:
+  name: devland
+  types:
+    - developer-tool
+product:
+  purpose: Standardize and reuse the semantic engineering context used to develop software with AI across different projects and agent runtimes.
+  priorities:
+    - agent-agnostic semantics
+    - project-agnostic composition
+    - minimal relevant context
+    - consistency
+    - evidence-driven evolution
+  non_goals:
+    - web application
+    - backend service
+    - custom repository connector
+    - autonomous multi-agent runtime
+platforms: []
+stack:
+  languages: []
+  frameworks: []
+  runtimes: []
+  data_stores: []
+architecture:
+  style: content-first semantic core
+  document: docs/superpowers/specs/2026-08-13-devland-v0-design.md
+qualities: []
+profiles: []
+delivery:
+  model: null
+constraints:
+  - OpenAI Skills and AGENTS.md are adapters, not canonical storage.
+  - Repository providers remain external capabilities.

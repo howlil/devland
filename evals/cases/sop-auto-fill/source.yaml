@@ -1,0 +1,6 @@
+case: sop-auto-fill
+source:
+  kind: github-repository
+  repository: howlil/sop-auto-fill
+  ref: master
+  observed_commit: 00f31a4b7fd44779930fd4abffb7b37e7b0bf722

@@ -1,0 +1,23 @@
+schema: devland.project/v0
+project:
+  name: invalid-extra
+  types: []
+product:
+  purpose: Reject schema drift.
+  priorities: []
+  non_goals: []
+platforms: []
+stack:
+  languages: []
+  frameworks: []
+  runtimes: []
+  data_stores: []
+architecture:
+  style: null
+  document: null
+qualities: []
+profiles: []
+delivery:
+  model: null
+constraints: []
+uncontrolled_field: true

@@ -1,0 +1,11 @@
+seed: >-
+  The canonical project model records one framework or runtime fact while the inspected dependency manifest and repository configuration indicate a different current value.
+expected_category: stack/runtime drift
+evidence:
+  - canonical project model contains the recorded framework or runtime fact
+  - repository manifest or configuration contains a conflicting current framework or runtime fact
+recommended_correction: >-
+  Report both sources and determine whether the repository change was intentional before updating canonical state. If repository reality is the accepted new state, refresh the canonical fact and affected projections in the same logical change.
+must_not_do:
+  - do not silently overwrite either repository evidence or canonical state
+  - do not automatically select a winner without verifying which state is intended

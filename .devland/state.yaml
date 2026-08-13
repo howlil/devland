@@ -1,0 +1,41 @@
+schema: devland.state/v0
+active_work: []
+blocked: []
+recently_completed:
+  - id: devland-v0
+    kind: feature
+    status: done
+    goal: Establish the minimal tested Devland v0 semantic core and prove it against representative project contexts.
+    scope:
+      allowed:
+        - canonical project and work schemas
+        - reusable core policies and evidence-driven profiles
+        - capability-aware bootstrap develop and doctor workflows
+        - agent adapter contracts
+        - structural and semantic evaluation fixtures
+        - Devland self-host documentation and repository verification
+      excluded:
+        - Devland CLI
+        - backend or user interface
+        - automated repository scanner
+        - policy registry or lockfile
+        - custom MCP or ChatGPT App
+        - multi-agent orchestration
+    acceptance:
+      - canonical project and state schemas validate representative fixtures
+      - work items support projects with and without iteration grouping
+      - reusable policy and profile layers do not absorb project-specific architecture
+      - exactly three capability-aware v0 workflows remain vendor-neutral
+      - adapters route to canonical context rather than duplicate project truth
+      - six initial eval cases and three seeded doctor scenarios pass repository contract tests
+      - no app backend database CLI or custom repository connector is introduced
+    artifacts:
+      spec: docs/superpowers/specs/2026-08-13-devland-v0-design.md
+      plan: docs/superpowers/plans/2026-08-13-devland-v0-implementation.md
+      evidence:
+        - GitHub Actions run 31686456647 verified Tasks 1-8 contracts on the feature branch
+        - GitHub Actions run 31686692410 verified the full self-host candidate before PR integration
+        - GitHub Actions PR run 31686921104 verified PR-1 candidate head 76affc24bc35e67cbece3f06b6797f17e5a9a846
+    branch: feat/devland-v0
+    pull_request: PR-1
+open_decisions: []

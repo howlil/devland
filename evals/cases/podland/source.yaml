@@ -1,0 +1,6 @@
+case: podland
+source:
+  kind: github-repository
+  repository: howlil/podland
+  ref: master
+  observed_commit: fcfc42c0f4873dbc43dd7039c8946dacbee9b5ac

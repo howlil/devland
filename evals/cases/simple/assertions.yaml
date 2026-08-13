@@ -1,0 +1,23 @@
+must_preserve:
+  - tiny local JavaScript utility purpose
+must_not_infer:
+  - server
+  - database
+  - architecture document
+  - decision record
+  - iteration
+  - release profile
+  - security profile
+expected_profiles: []
+forbidden_profiles:
+  - project-types.backend
+  - project-types.desktop
+  - qualities.security-sensitive
+  - qualities.performance-sensitive
+  - stacks.go
+  - stacks.typescript
+  - delivery.container-image
+  - delivery.desktop-release
+work_model: change
+optional_artifacts: []
+doctor_seed_expectations: []

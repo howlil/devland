@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Devland Project Model v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "project",
+    "product",
+    "platforms",
+    "stack",
+    "architecture",
+    "qualities",
+    "profiles",
+    "delivery",
+    "constraints"
+  ],
+  "properties": {
+    "schema": {
+      "const": "devland.project/v0"
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "types"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "types": {
+          "$ref": "#/$defs/uniqueStrings"
+        }
+      }
+    },
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["purpose", "priorities", "non_goals"],
+      "properties": {
+        "purpose": {
+          "type": "string"
+        },
+        "priorities": {
+          "$ref": "#/$defs/uniqueStrings"
+        },
+        "non_goals": {
+          "$ref": "#/$defs/uniqueStrings"
+        }
+      }
+    },
+    "platforms": {
+      "$ref": "#/$defs/uniqueStrings"
+    },
+    "stack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["languages", "frameworks", "runtimes", "data_stores"],
+      "properties": {
+        "languages": {
+          "$ref": "#/$defs/uniqueStrings"
+        },
+        "frameworks": {
+          "$ref": "#/$defs/uniqueStrings"
+        },
+        "runtimes": {
+          "$ref": "#/$defs/uniqueStrings"
+        },
+        "data_stores": {
+          "$ref": "#/$defs/uniqueStrings"
+        }
+      }
+    },
+    "architecture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["style", "document"],
+      "properties": {
+        "style": {
+          "type": ["string", "null"]
+        },
+        "document": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "qualities": {
+      "$ref": "#/$defs/uniqueStrings"
+    },
+    "profiles": {
+      "$ref": "#/$defs/uniqueStrings"
+    },
+    "delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model"],
+      "properties": {
+        "model": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "constraints": {
+      "$ref": "#/$defs/uniqueStrings"
+    }
+  },
+  "$defs": {
+    "uniqueStrings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  }
+}

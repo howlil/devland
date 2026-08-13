@@ -1,0 +1,6 @@
+case: simple
+source:
+  kind: synthetic
+  repository: none
+  ref: fixture
+  observed_commit: cfc9c246f4cdebc15df7220011f87bd4869a544b

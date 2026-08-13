@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Devland Work State v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "active_work", "blocked", "recently_completed", "open_decisions"],
+  "properties": {
+    "schema": { "const": "devland.state/v0" },
+    "active_work": { "type": "array", "items": { "$ref": "#/$defs/workItem" } },
+    "blocked": { "type": "array", "items": { "$ref": "#/$defs/workItem" } },
+    "recently_completed": { "type": "array", "items": { "$ref": "#/$defs/workItem" } },
+    "open_decisions": { "$ref": "#/$defs/uniqueStrings" }
+  },
+  "$defs": {
+    "uniqueStrings": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "nullableString": { "type": ["string", "null"] },
+    "workItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "status", "goal", "scope", "acceptance", "artifacts", "branch", "pull_request"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["proposed", "planned", "active", "blocked", "verifying", "done", "abandoned"] },
+        "goal": { "type": "string" },
+        "group": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "id"],
+          "properties": {
+            "type": { "type": "string", "minLength": 1 },
+            "id": { "type": "string", "minLength": 1 }
+          }
+        },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["allowed", "excluded"],
+          "properties": {
+            "allowed": { "$ref": "#/$defs/uniqueStrings" },
+            "excluded": { "$ref": "#/$defs/uniqueStrings" }
+          }
+        },
+        "acceptance": { "$ref": "#/$defs/uniqueStrings" },
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["spec", "plan", "evidence"],
+          "properties": {
+            "spec": { "$ref": "#/$defs/nullableString" },
+            "plan": { "$ref": "#/$defs/nullableString" },
+            "evidence": { "$ref": "#/$defs/uniqueStrings" }
+          }
+        },
+        "branch": { "$ref": "#/$defs/nullableString" },
+        "pull_request": { "$ref": "#/$defs/nullableString" }
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+case: cliplingo
+source:
+  kind: github-repository
+  repository: howlil/cliplingo
+  ref: master
+  observed_commit: 12563d3d5a4f6fc92e69f7abf52b60e4c89562b9

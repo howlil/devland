@@ -1,0 +1,47 @@
+schema: devland.project/v0
+project:
+  name: mypaas
+  types:
+    - fullstack
+    - infrastructure
+product:
+  purpose: Provide a self-hosted personal deployment platform for repository-driven container and multi-service applications.
+  priorities:
+    - safe repeatable deployments
+    - low operational overhead for a small installation
+    - rollback and durable deployment state
+    - clear operator visibility
+  non_goals:
+    - cluster orchestration
+    - framework auto-build behavior without deployment definitions
+platforms:
+  - linux
+  - self-hosted
+stack:
+  languages:
+    - go
+    - typescript
+  frameworks:
+    - chi
+    - sveltekit
+  runtimes:
+    - go
+    - container-runtime
+  data_stores:
+    - postgresql
+architecture:
+  style: modular-self-hosted-platform
+  document: evals/cases/mypaas/expected/architecture.md
+qualities:
+  - security-sensitive
+profiles:
+  - project-types.backend
+  - qualities.security-sensitive
+  - stacks.go
+  - stacks.typescript
+  - delivery.container-image
+delivery:
+  model: container-image
+constraints:
+  - deployment and integration credentials require explicit protection
+  - project-specific stack conventions remain project facts rather than universal policy

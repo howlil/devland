@@ -1,0 +1,23 @@
+must_preserve:
+  - one-host self-hosted deployment purpose
+  - modular monolith and durable desired-state model
+  - security reliability and recovery constraints
+  - Iteration 2 execution lock and later-scope exclusions
+must_not_infer:
+  - Kubernetes requirement
+  - microservices
+  - multiple runtime or ingress implementations
+  - later application deployment behavior as current scope
+expected_profiles:
+  - project-types.backend
+  - qualities.security-sensitive
+  - stacks.go
+  - stacks.typescript
+  - delivery.container-image
+forbidden_profiles:
+  - project-types.desktop
+  - delivery.desktop-release
+work_model: change-with-iteration-group
+optional_artifacts:
+  - architecture
+doctor_seed_expectations: []

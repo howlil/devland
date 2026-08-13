@@ -1,0 +1,34 @@
+schema: devland.state/v0
+active_work:
+  - id: windows-interaction
+    kind: feature
+    status: planned
+    goal: Prove selected-text capture and fast popup interaction on Windows without real ML inference.
+    group:
+      type: iteration
+      id: "001"
+    scope:
+      allowed:
+        - global shortcut and selected-text capture
+        - popup behavior and positioning
+        - deterministic fake translation
+        - compatibility and resource measurement
+      excluded:
+        - real inference worker
+        - OCR
+        - all-language routing
+    acceptance:
+      - representative selectable Windows applications are checked
+      - stale requests cannot overwrite newer state
+      - clipboard fallback behavior is safe
+      - latency idle memory idle CPU and privacy evidence are recorded
+    artifacts:
+      spec: null
+      plan: .agents/plans/001-windows-interaction.md
+      evidence: []
+    branch: null
+    pull_request: null
+blocked: []
+recently_completed: []
+open_decisions:
+  - final release latency and resource budgets remain evidence-driven

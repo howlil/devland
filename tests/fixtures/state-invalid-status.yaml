@@ -1,0 +1,19 @@
+schema: devland.state/v0
+active_work:
+  - id: browser-session-auth
+    kind: feature
+    status: almost-done
+    goal: Separate browser sessions from machine credentials.
+    scope:
+      allowed: []
+      excluded: []
+    acceptance: []
+    artifacts:
+      spec: null
+      plan: null
+      evidence: []
+    branch: null
+    pull_request: null
+blocked: []
+recently_completed: []
+open_decisions: []

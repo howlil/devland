@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readText } from '../helpers/files.mjs';
+import { readText, readYaml } from '../helpers/files.mjs';
+import { createValidator } from '../helpers/schema.mjs';
 import { parseFrontmatter } from '../helpers/frontmatter.mjs';
 
 const fixedFacts = [
@@ -42,4 +43,42 @@ test('generic adapter contract preserves canonical/capability boundaries', async
   assert.match(text, /must not own/i);
   assert.match(text, /canonical product facts/i);
   assert.match(text, /repository auth/i);
+});
+
+test('Devland consumes its own canonical project and state schemas', async () => {
+  const projectValidate = await createValidator('schemas/project.schema.json');
+  const stateValidate = await createValidator('schemas/state.schema.json');
+  const project = await readYaml('.devland/project.yaml');
+  const state = await readYaml('.devland/state.yaml');
+
+  assert.equal(projectValidate(project), true, JSON.stringify(projectValidate.errors));
+  assert.equal(stateValidate(state), true, JSON.stringify(stateValidate.errors));
+  assert.deepEqual(project.stack, { languages: [], frameworks: [], runtimes: [], data_stores: [] });
+  assert.equal(project.profiles.length, 0);
+  assert.equal(state.active_work.some((item) => item.id === 'devland-v0'), true);
+});
+
+test('root AGENTS is a router and README keeps Devland positioned as a tool contract', async () => {
+  const agents = await readText('AGENTS.md');
+  assert.match(agents, /\.devland\/project\.yaml/);
+  assert.match(agents, /\.devland\/state\.yaml/);
+  assert.match(agents, /docs\/superpowers\/specs\/2026-08-13-devland-v0-design\.md/);
+
+  for (const duplicatedFact of ['developer-tool', 'content-first semantic core', 'agent-agnostic semantics']) {
+    assert.equal(agents.includes(duplicatedFact), false, `root AGENTS duplicates canonical fact: ${duplicatedFact}`);
+  }
+
+  const readme = await readText('README.md');
+  for (const falsePositioning of [
+    /Devland is a SaaS/i,
+    /Devland is an IDE/i,
+    /Devland is a coding agent runtime/i,
+    /Devland is a GitHub connector/i,
+  ]) {
+    assert.equal(falsePositioning.test(readme), false, `README contains false positioning: ${falsePositioning}`);
+  }
+  assert.match(readme, /Devland Core/i);
+  assert.match(readme, /project\.yaml/);
+  assert.match(readme, /bootstrap-project/);
+  assert.match(readme, /doctor-project/);
 });

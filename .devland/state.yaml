@@ -2,6 +2,36 @@ schema: devland.state/v0
 active_work: []
 blocked: []
 recently_completed:
+  - id: prebootstrap-active-branch-reconciliation
+    kind: bugfix
+    status: done
+    goal: Prevent canonical Devland writes from conflicting with active work that began before Devland context was introduced on the current base.
+    scope:
+      allowed:
+        - bootstrap workflow branch ancestry guard
+        - develop workflow branch ancestry guard
+        - capability-limited reconciliation stop condition
+        - ClipLingo doctor regression scenario
+      excluded:
+        - automatic merge conflict resolution
+        - new VCS capability vocabulary
+        - repository-specific migration code
+    acceptance:
+      - regression contract fails before the workflow fix
+      - bootstrap checks branch ancestry before canonical writes when evidence is available
+      - develop-change reconciles current base context before canonical state mutation when active work predates Devland bootstrap
+      - workflows stop rather than claim a safe mutation when reconciliation cannot be performed or verified
+      - the real ClipLingo migration case is retained as a stale-work-state doctor seed
+      - full Devland test suite passes after the fix
+    artifacts:
+      spec: null
+      plan: null
+      evidence:
+        - GitHub Actions run 31712922558 reproduced the missing ancestry guard with 17 passing tests and one expected regression failure
+        - GitHub Actions run 31713431821 reproduced the missing doctor scenario while the workflow regression was already green
+        - GitHub Actions run 31714191155 passed the full suite after workflow and eval cleanup
+    branch: fix/prebootstrap-active-branch
+    pull_request: PR-2
   - id: devland-v0
     kind: feature
     status: done

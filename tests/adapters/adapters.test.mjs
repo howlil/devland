@@ -55,7 +55,8 @@ test('Devland consumes its own canonical project and state schemas', async () =>
   assert.equal(stateValidate(state), true, JSON.stringify(stateValidate.errors));
   assert.deepEqual(project.stack, { languages: [], frameworks: [], runtimes: [], data_stores: [] });
   assert.equal(project.profiles.length, 0);
-  assert.equal(state.active_work.some((item) => item.id === 'devland-v0'), true);
+  const workItems = [...state.active_work, ...state.recently_completed];
+  assert.equal(workItems.some((item) => item.id === 'devland-v0'), true);
 });
 
 test('root AGENTS is a router and README keeps Devland positioned as a tool contract', async () => {

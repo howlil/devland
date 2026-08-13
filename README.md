@@ -78,4 +78,4 @@ Repository contract checks use `npm ci` and `npm test`. These dependencies are d
 
 ## Current status
 
-Devland v0 is in pull-request verification against the design specification in `docs/superpowers/specs/2026-08-13-devland-v0-design.md`. The canonical execution state and evidence references are recorded in `.devland/state.yaml`.
+The Devland v0 semantic core is implemented and has passed its defined schema, policy/profile, workflow, adapter, eval-fixture, doctor-scenario, and self-host verification gates. Completion evidence is recorded concisely in `.devland/state.yaml`.

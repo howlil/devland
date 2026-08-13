@@ -1,0 +1,45 @@
+schema: devland.project/v0
+project:
+  name: wago
+  types:
+    - fullstack
+product:
+  purpose: Run one dependable self-hosted WhatsApp gateway account per instance with a small operational footprint.
+  priorities:
+    - correctness
+    - security and data integrity
+    - reliability
+    - maintainability and simplicity
+  non_goals:
+    - hypothetical horizontal scale
+    - restriction bypass behavior
+    - infrastructure added only for future scale
+platforms:
+  - self-hosted
+stack:
+  languages:
+    - typescript
+  frameworks:
+    - express
+    - react
+    - baileys
+  runtimes:
+    - node
+    - container-runtime
+  data_stores:
+    - sqlite
+architecture:
+  style: modular-monolith
+  document: evals/cases/wago/expected/architecture.md
+qualities:
+  - security-sensitive
+profiles:
+  - project-types.backend
+  - qualities.security-sensitive
+  - stacks.typescript
+  - delivery.container-image
+delivery:
+  model: container-image
+constraints:
+  - one active account and runtime lifecycle per instance
+  - persistent gateway state and backups are secret-bearing

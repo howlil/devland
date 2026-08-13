@@ -1,0 +1,23 @@
+must_preserve:
+  - completed end-to-end vertical slice
+  - real frontend backend and disposable database verification
+  - production auth versus deterministic test-auth boundary
+  - explicit prohibition on inferring the next iteration
+must_not_infer:
+  - architecture document
+  - broad stack catalog beyond sparse evidence
+  - active next iteration
+  - large profile set
+expected_profiles: []
+forbidden_profiles:
+  - project-types.backend
+  - project-types.desktop
+  - qualities.security-sensitive
+  - qualities.performance-sensitive
+  - stacks.go
+  - stacks.typescript
+  - delivery.container-image
+  - delivery.desktop-release
+work_model: change-with-iteration-group
+optional_artifacts: []
+doctor_seed_expectations: []

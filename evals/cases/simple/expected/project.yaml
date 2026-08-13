@@ -1,0 +1,23 @@
+schema: devland.project/v0
+project:
+  name: simple
+  types: []
+product:
+  purpose: Normalize lines in a local text file with a small JavaScript utility.
+  priorities: []
+  non_goals: []
+platforms: []
+stack:
+  languages:
+    - javascript
+  frameworks: []
+  runtimes: []
+  data_stores: []
+architecture:
+  style: null
+  document: null
+qualities: []
+profiles: []
+delivery:
+  model: null
+constraints: []

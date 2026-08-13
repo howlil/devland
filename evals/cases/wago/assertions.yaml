@@ -1,0 +1,23 @@
+must_preserve:
+  - single-instance gateway product shape
+  - persistence and protocol-module boundaries
+  - sensitive-data logging constraints
+  - change-oriented spec plan verification model
+must_not_infer:
+  - global iteration requirement
+  - multi-replica architecture
+  - anti-detection or restriction-bypass features
+  - external queue requirement
+expected_profiles:
+  - project-types.backend
+  - qualities.security-sensitive
+  - stacks.typescript
+  - delivery.container-image
+forbidden_profiles:
+  - project-types.desktop
+  - delivery.desktop-release
+work_model: change
+optional_artifacts:
+  - architecture
+doctor_seed_expectations:
+  - missing verification evidence for claimed-done work

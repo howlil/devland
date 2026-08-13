@@ -1,0 +1,47 @@
+schema: devland.project/v0
+project:
+  name: cliplingo
+  types:
+    - desktop
+product:
+  purpose: Provide system-wide, Windows-first offline translation from selected text with a fast popup workflow.
+  priorities:
+    - reliable text capture and popup behavior
+    - privacy and offline normal operation
+    - low perceived latency and idle resource use
+    - strong CJK translation quality
+  non_goals:
+    - cloud translation in the normal path
+    - OCR in the first working path
+    - user accounts
+    - speculative non-Windows implementation before Windows behavior is proven
+platforms:
+  - windows
+stack:
+  languages:
+    - rust
+    - typescript
+    - c++
+  frameworks:
+    - tauri
+    - svelte
+  runtimes:
+    - node
+  data_stores: []
+architecture:
+  style: native-shell-with-isolated-worker
+  document: evals/cases/cliplingo/expected/architecture.md
+qualities:
+  - performance-sensitive
+  - security-sensitive
+profiles:
+  - project-types.desktop
+  - qualities.performance-sensitive
+  - qualities.security-sensitive
+  - stacks.typescript
+  - delivery.desktop-release
+delivery:
+  model: desktop-release
+constraints:
+  - selected or translated text must not appear in normal logs
+  - architecture and latency assumptions require benchmark evidence

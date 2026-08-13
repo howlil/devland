@@ -1,0 +1,6 @@
+case: mypaas
+source:
+  kind: github-repository
+  repository: howlil/MyPaas
+  ref: main
+  observed_commit: cb565644e476d326dbedbe14429a470177da5e0c

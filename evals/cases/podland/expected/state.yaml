@@ -1,0 +1,35 @@
+schema: devland.state/v0
+active_work:
+  - id: secrets-router-public-url
+    kind: feature
+    status: active
+    goal: Establish retained-secret protection and the canonical public control-plane route without leaking later deployment scope.
+    group:
+      type: iteration
+      id: "2"
+    scope:
+      allowed:
+        - master-key and retained-secret encryption behavior
+        - current control-plane route boundary
+        - external ingress for the canonical product URL
+        - restart-safe reconciliation
+        - canonical-owner web login where supported
+      excluded:
+        - repository source authorization
+        - user application deployment runtime and builds
+        - application domains
+        - staging and release automation
+    acceptance:
+      - retained credentials are encrypted and not revealed by ordinary reads
+      - route and ingress reconciliation is bounded repeatable and restart-safe
+      - partial failure leaves durable resumable desired state
+      - previous identity and session invariants remain verified
+    artifacts:
+      spec: null
+      plan: PLAN.md
+      evidence: []
+    branch: null
+    pull_request: null
+blocked: []
+recently_completed: []
+open_decisions: []

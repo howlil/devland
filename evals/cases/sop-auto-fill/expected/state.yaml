@@ -1,0 +1,31 @@
+schema: devland.state/v0
+active_work: []
+blocked: []
+recently_completed:
+  - id: mvp-vertical-slice
+    kind: feature
+    status: done
+    goal: Prove one meaningful SOP workflow end to end on real frontend backend and test database.
+    group:
+      type: iteration
+      id: 1-mvp-vertical-slice
+    scope:
+      allowed:
+        - authenticated SOP workspace journey
+        - autosave diagrams PDF completion and new-version behavior
+      excluded:
+        - unapproved next-iteration scope
+        - production auth bypass route for testing
+    acceptance:
+      - main E2E journey runs against real frontend backend and disposable database
+      - completed SOP is read-only and new version remains editable
+      - pre-merge and post-merge quality gates are green
+    artifacts:
+      spec: null
+      plan: null
+      evidence:
+        - CI run 145 on the implementation head
+        - CI run 152 after merge to master
+    branch: feat/mvp-vertical-slice
+    pull_request: PR-3
+open_decisions: []

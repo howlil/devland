@@ -1,0 +1,29 @@
+schema: devland.project/v0
+project:
+  name: sop-auto-fill
+  types:
+    - fullstack
+product:
+  purpose: Support an end-to-end web workflow for authoring and versioning SOP content.
+  priorities:
+    - preserve verified end-to-end product behavior
+    - deterministic testability of the main journey
+  non_goals:
+    - scope expansion inferred only from completed iteration state
+platforms:
+  - web
+stack:
+  languages: []
+  frameworks: []
+  runtimes: []
+  data_stores:
+    - mysql
+architecture:
+  style: null
+  document: null
+qualities: []
+profiles: []
+delivery:
+  model: null
+constraints:
+  - production authentication must not be replaced by a test-only bypass

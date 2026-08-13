@@ -1,0 +1,24 @@
+must_preserve:
+  - windows-first offline translation purpose
+  - privacy and measured latency priorities
+  - native shell versus UI versus inference-worker ownership
+  - current Windows interaction iteration scope
+must_not_infer:
+  - cloud backend
+  - OCR requirement
+  - cross-platform implementation
+  - database requirement
+expected_profiles:
+  - project-types.desktop
+  - qualities.performance-sensitive
+  - qualities.security-sensitive
+  - stacks.typescript
+  - delivery.desktop-release
+forbidden_profiles:
+  - project-types.backend
+  - delivery.container-image
+work_model: change-with-iteration-group
+optional_artifacts:
+  - architecture
+doctor_seed_expectations:
+  - stack/runtime drift

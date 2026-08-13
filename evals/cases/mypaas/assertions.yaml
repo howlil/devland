@@ -1,0 +1,24 @@
+must_preserve:
+  - self-hosted deployment platform purpose
+  - Go and SvelteKit TypeScript stack facts
+  - relational durable state and container delivery model
+  - security-sensitive integration and deployment constraints
+must_not_infer:
+  - Kubernetes requirement
+  - universal Go folder conventions
+  - universal SQL tooling choices
+  - agent-specific entry files as canonical truth
+expected_profiles:
+  - project-types.backend
+  - qualities.security-sensitive
+  - stacks.go
+  - stacks.typescript
+  - delivery.container-image
+forbidden_profiles:
+  - project-types.desktop
+  - delivery.desktop-release
+work_model: change
+optional_artifacts:
+  - architecture
+doctor_seed_expectations:
+  - adapter duplication/divergence

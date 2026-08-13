@@ -1,0 +1,6 @@
+case: wago
+source:
+  kind: github-repository
+  repository: howlil/wago
+  ref: main
+  observed_commit: 290345759d23d1398fce97dfd8e1966b4ad15c9c

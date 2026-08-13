@@ -1,0 +1,47 @@
+schema: devland.project/v0
+project:
+  name: podland
+  types:
+    - fullstack
+    - infrastructure
+product:
+  purpose: Turn one Linux VM into a dependable self-hosted application deployment platform.
+  priorities:
+    - correctness and reliability on one host
+    - security of identity and integration credentials
+    - deterministic recovery and reconciliation
+    - low operational complexity
+  non_goals:
+    - distributed orchestration platform in V1
+    - speculative multi-provider implementations
+    - infrastructure added only to imitate larger platforms
+platforms:
+  - linux
+stack:
+  languages:
+    - go
+    - typescript
+  frameworks:
+    - react
+    - vite
+  runtimes:
+    - go
+    - container-runtime
+  data_stores:
+    - postgresql
+architecture:
+  style: modular-monolith
+  document: evals/cases/podland/expected/architecture.md
+qualities:
+  - security-sensitive
+profiles:
+  - project-types.backend
+  - qualities.security-sensitive
+  - stacks.go
+  - stacks.typescript
+  - delivery.container-image
+delivery:
+  model: container-image
+constraints:
+  - one-host V1 must remain recoverable without distributed control-plane dependencies
+  - external side effects require bounded and repeatable behavior

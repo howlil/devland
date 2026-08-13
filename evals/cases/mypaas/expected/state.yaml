@@ -1,0 +1,6 @@
+schema: devland.state/v0
+active_work: []
+blocked: []
+recently_completed: []
+open_decisions:
+  - normalize duplicated agent-specific project and stack context before treating adapters as authoritative

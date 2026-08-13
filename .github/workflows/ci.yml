@@ -16,4 +16,9 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      - name: Capture generated lockfile
+        run: |
+          echo '---PACKAGE-LOCK-BEGIN---'
+          cat package-lock.json
+          echo '---PACKAGE-LOCK-END---'
       - run: npm test

@@ -40,3 +40,13 @@ test('workflows are capability-aware and vendor-neutral', async () => {
     assert.match(body, /^## Outputs$/m);
   }
 });
+
+test('canonical writes guard against active branches that predate Devland bootstrap', async () => {
+  const bootstrap = (parseFrontmatter(await readText(`${workflowDir}/bootstrap-project.md`))).body;
+  const develop = (parseFrontmatter(await readText(`${workflowDir}/develop-change.md`))).body;
+
+  assert.match(bootstrap, /branch ancestry|branch point|predates? .*bootstrap/i);
+  assert.match(bootstrap, /reconcile .*base|reconcile .*canonical|avoid .*add\/add/i);
+  assert.match(develop, /branch ancestry|branch point|predates? .*bootstrap/i);
+  assert.match(develop, /reconcile .*base|reconcile .*canonical|avoid .*add\/add/i);
+});

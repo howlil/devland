@@ -1,0 +1,11 @@
+seed: >-
+  The accepted canonical project model records the current product purpose and stack, but an agent-specific projection independently carries an older conflicting stack fact.
+expected_category: adapter duplication/divergence
+evidence:
+  - .devland/project.yaml is the accepted canonical project representation for the scenario
+  - an agent-specific projection contains a conflicting project or stack fact instead of routing to canonical truth
+recommended_correction: >-
+  Verify the repository reality, then refresh the stale projection from canonical Devland context. Keep the project fact in one canonical source rather than editing multiple agent files as independent truths.
+must_not_do:
+  - do not automatically rewrite canonical project truth from a stale adapter
+  - do not maintain both agent files as separate sources of truth

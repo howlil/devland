@@ -8,6 +8,7 @@ const cases = ['cliplingo', 'mypaas', 'podland', 'simple', 'sop-auto-fill', 'wag
 const requiredFiles = ['source.yaml', 'evidence.md', 'expected/project.yaml', 'expected/state.yaml', 'assertions.yaml'];
 const secretKeys = ['access_token', 'private_key', 'client_secret', 'api_key_value', 'cookie_value'];
 const doctorScenarios = [
+  'cliplingo/doctor/prebootstrap-active-branch.yaml',
   'cliplingo/doctor/stack-drift.yaml',
   'mypaas/doctor/adapter-divergence.yaml',
   'wago/doctor/missing-verification.yaml',

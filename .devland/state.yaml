@@ -2,7 +2,7 @@ schema: devland.state/v0
 active_work:
   - id: devland-v0
     kind: feature
-    status: active
+    status: verifying
     goal: Establish the minimal tested Devland v0 semantic core and prove it against representative project contexts.
     scope:
       allowed:
@@ -32,8 +32,9 @@ active_work:
       plan: docs/superpowers/plans/2026-08-13-devland-v0-implementation.md
       evidence:
         - GitHub Actions run 31686456647 verified Tasks 1-8 contracts on the feature branch
+        - GitHub Actions run 31686692410 verified the full self-host candidate before PR integration
     branch: feat/devland-v0
-    pull_request: null
+    pull_request: PR-1
 blocked: []
 recently_completed: []
 open_decisions: []

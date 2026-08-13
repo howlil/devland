@@ -78,4 +78,4 @@ Repository contract checks use `npm ci` and `npm test`. These dependencies are d
 
 ## Current status
 
-Devland v0 is under implementation and validation against the design specification in `docs/superpowers/specs/2026-08-13-devland-v0-design.md`. The current canonical execution state is recorded in `.devland/state.yaml`.
+Devland v0 is in pull-request verification against the design specification in `docs/superpowers/specs/2026-08-13-devland-v0-design.md`. The canonical execution state and evidence references are recorded in `.devland/state.yaml`.

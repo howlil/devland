@@ -1,0 +1,8 @@
+seed: Canonical work context is older than current repository evidence after a context migration.
+expected_category: stale work state
+evidence:
+  - current target context differs from the earlier work context
+  - current repository evidence shows newer work progress
+recommended_correction: Reconcile current context first, then refresh state from verified evidence.
+must_not_do:
+  - do not automatically update state without verifying current evidence

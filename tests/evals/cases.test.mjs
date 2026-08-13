@@ -7,6 +7,22 @@ import { createValidator } from '../helpers/schema.mjs';
 const cases = ['cliplingo', 'mypaas', 'podland', 'simple', 'sop-auto-fill', 'wago'];
 const requiredFiles = ['source.yaml', 'evidence.md', 'expected/project.yaml', 'expected/state.yaml', 'assertions.yaml'];
 const secretKeys = ['access_token', 'private_key', 'client_secret', 'api_key_value', 'cookie_value'];
+const doctorScenarios = [
+  'cliplingo/doctor/stack-drift.yaml',
+  'mypaas/doctor/adapter-divergence.yaml',
+  'wago/doctor/missing-verification.yaml',
+];
+const doctorCategories = new Set([
+  'project-model drift',
+  'stack/runtime drift',
+  'architecture-document drift',
+  'stale work state',
+  'adapter duplication/divergence',
+  'invalid/missing referenced files',
+  'policy conflict',
+  'missing verification evidence for claimed-done work',
+  'over-generated context with no current applicability',
+]);
 
 async function profileIds() {
   const result = new Set();
@@ -69,4 +85,26 @@ test('the six v0 eval cases have valid canonical fixtures and assertions', async
   assert.equal(simpleAssertions.optional_artifacts.includes('architecture'), false);
   assert.equal(simpleAssertions.optional_artifacts.includes('plan'), false);
   assert.equal(simpleAssertions.optional_artifacts.includes('evidence'), false);
+});
+
+test('seeded doctor scenarios use only the fixed v0 diagnostic categories', async () => {
+  for (const relativePath of doctorScenarios) {
+    const path = `evals/cases/${relativePath}`;
+    assert.equal(await exists(path), true, `missing doctor scenario: ${relativePath}`);
+    const scenario = await readYaml(path);
+    assert.equal(typeof scenario.seed, 'string');
+    assert.ok(scenario.seed.trim().length > 0);
+    assert.equal(doctorCategories.has(scenario.expected_category), true, `invalid doctor category: ${scenario.expected_category}`);
+    assert.ok(Array.isArray(scenario.evidence));
+    assert.ok(scenario.evidence.length > 0);
+    assert.equal(typeof scenario.recommended_correction, 'string');
+    assert.ok(scenario.recommended_correction.trim().length > 0);
+    assert.ok(Array.isArray(scenario.must_not_do));
+    assert.ok(scenario.must_not_do.length > 0);
+    assert.equal(
+      scenario.must_not_do.some((item) => /automatic|silently|without verifying|fabricat/i.test(item)),
+      true,
+      `${relativePath} must explicitly forbid unsafe automatic resolution`,
+    );
+  }
 });

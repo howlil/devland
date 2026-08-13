@@ -1,0 +1,25 @@
+schema: devland.project/v0
+project:
+  name: example
+  types:
+    - backend
+product:
+  purpose: Minimal example service.
+  priorities:
+    - correctness
+  non_goals: []
+platforms: []
+stack:
+  languages:
+    - typescript
+  frameworks: []
+  runtimes: []
+  data_stores: []
+architecture:
+  style: null
+  document: null
+qualities: []
+profiles: []
+delivery:
+  model: null
+constraints: []

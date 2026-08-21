@@ -2,7 +2,11 @@
   "name": "devland",
   "private": true,
   "type": "module",
+  "bin": {
+    "devland": "./bin/devland.mjs"
+  },
   "scripts": {
+    "devland": "node bin/devland.mjs",
     "test": "node --test",
     "check": "node --test"
   },

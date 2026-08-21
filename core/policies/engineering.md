@@ -15,6 +15,8 @@ scope: core
 
 ## Defaults
 
+- Decompose accepted work into the **smallest valuable, independently verifiable change** that can provide trustworthy feedback without creating unsafe partial behavior.
+- Keep **small batch** size: changes should remain easy to understand, test, review, integrate, diagnose, and reverse unless the behavior cannot be separated safely.
 - Choose the simplest design that satisfies current requirements without closing a known, near-term boundary unnecessarily.
 - Refactor only what enables a clean current change or removes a direct blocker.
 - Prefer narrow ownership boundaries and clear responsibilities over speculative layers or internal frameworks.

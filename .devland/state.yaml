@@ -2,6 +2,43 @@ schema: devland.state/v0
 active_work: []
 blocked: []
 recently_completed:
+  - id: devland-v1-iteration-0-flow-contract
+    kind: design
+    status: done
+    goal: Define the tested Devland v1 contract for rapid XP delivery, small batches, production feedback, and measurable value without introducing executable platform scope yet.
+    scope:
+      allowed:
+        - v1 rapid delivery semantic contract
+        - smallest valuable slice and repeated TDD inner-loop semantics
+        - continuous integration production observation and learning outer-loop semantics
+        - delivery flow stability outcome and guardrail metric definitions
+        - provider-adapter and canonical-state boundaries
+        - executable repository contract tests for the v1 design
+      excluded:
+        - develop-change workflow implementation changes
+        - project or state schema changes
+        - Devland CLI
+        - metrics engine
+        - provider adapters
+        - production telemetry collection
+        - web dashboard or database
+        - agent runtime or multi-agent orchestration
+    acceptance:
+      - v1 contract tests fail before the specification exists and the failure represents the missing contract
+      - the contract defines smallest valuable slices and repeated RED GREEN REFACTOR development
+      - the contract connects continuous integration to production observation and learning without requiring heavyweight artifacts
+      - delivery speed stability end-to-end flow and product value are measured as distinct concerns
+      - current DORA delivery metrics plus idea-to-production cycle time outcome metrics and guardrail metrics are explicitly defined
+      - provider-specific evidence remains behind adapters and canonical state remains a concise work index
+      - full Devland test suite passes after the contract is implemented
+    artifacts:
+      spec: docs/superpowers/specs/2026-08-22-devland-v1-flow-contract.md
+      plan: null
+      evidence:
+        - GitHub Actions run 32528435703 verified RED with 18 existing tests passing and 3 expected v1 contract failures because the specification did not yet exist
+        - GitHub Actions run 32528522386 verified GREEN after the v1 contract specification was added
+    branch: feat/devland-v1-iteration-0-contract
+    pull_request: PR-3
   - id: prebootstrap-active-branch-reconciliation
     kind: bugfix
     status: done

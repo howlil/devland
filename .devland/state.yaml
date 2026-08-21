@@ -2,6 +2,44 @@ schema: devland.state/v0
 active_work: []
 blocked: []
 recently_completed:
+  - id: devland-v1-iteration-2-executable
+    kind: feature
+    status: done
+    goal: Add the smallest deterministic Devland executable for canonical validation and resolved workflow context without introducing provider or analytics scope.
+    scope:
+      allowed:
+        - executable Devland CLI entrypoint
+        - canonical project and state schema validation
+        - deterministic develop workflow context resolution
+        - core policy loading
+        - applicable project profile resolution
+        - honest unknown-workflow failure
+        - package bin metadata
+        - executable CLI contract tests
+      excluded:
+        - engineering event model
+        - flow or DORA metrics engine
+        - provider adapters
+        - repository mutation commands
+        - CI or deployment execution
+        - production telemetry collection
+        - dashboard or database
+        - agent runtime or multi-agent orchestration
+    acceptance:
+      - executable contract tests fail before the CLI exists and the failure represents the missing executable
+      - validate checks canonical project and state using the existing schemas
+      - context returns canonical project state core policies applicable profiles and the requested workflow as deterministic JSON
+      - unknown workflows fail without claiming successful context resolution
+      - existing dependency versions remain unchanged
+      - full Devland test suite passes after implementation and packaging
+    artifacts:
+      spec: docs/superpowers/specs/2026-08-22-devland-v1-flow-contract.md
+      plan: null
+      evidence:
+        - GitHub Actions run 32529514675 verified RED with 25 existing tests passing and 3 expected CLI contract failures because bin/devland.mjs did not exist
+        - GitHub Actions run 32529598697 verified GREEN after the deterministic runtime and CLI entrypoint were added
+    branch: feat/devland-v1-iteration-2-executable
+    pull_request: PR-5
   - id: devland-v1-iteration-1-rapid-workflow
     kind: feature
     status: done

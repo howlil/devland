@@ -2,6 +2,46 @@ schema: devland.state/v0
 active_work: []
 blocked: []
 recently_completed:
+  - id: devland-v1-iteration-1-rapid-workflow
+    kind: feature
+    status: done
+    goal: Make develop-change execute the Devland v1 rapid XP feedback loop with small valuable batches, repeated TDD, focused feedback, and prompt integration.
+    scope:
+      allowed:
+        - develop-change rapid XP workflow semantics
+        - smallest valuable independently verifiable slice guidance
+        - repeated RED GREEN REFACTOR inner loop
+        - focused feedback and broader pre-integration verification
+        - short-lived branch and prompt integration defaults
+        - conditional production and outcome observation when evidence is available
+        - executable workflow contract tests
+      excluded:
+        - project or state schema changes
+        - Devland CLI
+        - engineering event model
+        - metrics engine
+        - provider adapters
+        - production telemetry collection
+        - dashboard or database
+        - agent runtime or multi-agent orchestration
+    acceptance:
+      - workflow contract tests fail against the v0 develop-change semantics before implementation
+      - develop-change selects the smallest valuable slice with observable acceptance
+      - behavior work repeats RED GREEN REFACTOR with fastest relevant focused verification
+      - specs and plans remain conditional instead of default ceremony
+      - canonical state remains concise instead of recording TDD micro-steps
+      - engineering policy prefers smallest valuable independently verifiable small batches
+      - Git policy favors short-lived work and prompt integration while preserving one logical task and one normal PR
+      - branch ancestry reconciliation and capability honesty remain enforced
+      - full Devland test suite passes after the workflow change
+    artifacts:
+      spec: docs/superpowers/specs/2026-08-22-devland-v1-flow-contract.md
+      plan: null
+      evidence:
+        - GitHub Actions run 32529062845 verified RED with 21 existing tests passing and 4 expected rapid-workflow contract failures
+        - GitHub Actions run 32529141761 verified GREEN after develop-change engineering policy and Git policy were updated
+    branch: feat/devland-v1-iteration-1-rapid-workflow
+    pull_request: PR-4
   - id: devland-v1-iteration-0-flow-contract
     kind: design
     status: done

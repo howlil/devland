@@ -2,6 +2,43 @@ schema: devland.state/v0
 active_work: []
 blocked: []
 recently_completed:
+  - id: devland-v1-iteration-3-events
+    kind: feature
+    status: done
+    goal: Establish a normalized provider-agnostic engineering event model and deterministic local ingestion without turning canonical state into telemetry storage.
+    scope:
+      allowed:
+        - devland.event/v1 schema
+        - normalized event vocabulary from work acceptance through outcome observation
+        - provider-neutral linkage fields for work change commit deployment and environment
+        - devland event append command
+        - append-only local NDJSON runtime event log
+        - idempotent duplicate event replay by stable event id
+        - local runtime telemetry excluded from Git tracking
+        - executable event schema and ingestion tests
+      excluded:
+        - DORA or flow metric calculation
+        - provider adapters
+        - automatic GitHub CI deployment or observability collection
+        - analytics database or dashboard
+        - canonical state telemetry storage
+        - agent runtime or orchestration
+    acceptance:
+      - event contract tests fail before schema and ingestion implementation exist
+      - schema defines the v1 normalized event vocabulary and stable identity timestamp source and linkage fields
+      - valid normalized events append to .devland/runtime/events.ndjson outside canonical state
+      - identical replay of the same event id and payload is idempotent
+      - invalid normalized events fail without writing evidence
+      - runtime telemetry is ignored by Git
+      - full Devland test suite passes after implementation
+    artifacts:
+      spec: docs/superpowers/specs/2026-08-22-devland-v1-flow-contract.md
+      plan: null
+      evidence:
+        - GitHub Actions run 32555705621 verified RED with 29 existing tests passing and 4 expected event contract failures because schema and event append did not exist
+        - GitHub Actions run 32555761656 verified GREEN after normalized event schema idempotent local ingestion CLI command and runtime ignore rule were added
+    branch: feat/devland-v1-iteration-3-events
+    pull_request: PR-7
   - id: devland-v1-package-root-resolution
     kind: bugfix
     status: done

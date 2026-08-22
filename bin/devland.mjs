@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { appendEngineeringEvent } from '../src/events.mjs';
 import { resolveContext, validateCanonical } from '../src/runtime.mjs';
 
 function print(value) {
@@ -12,7 +13,7 @@ function fail(message) {
 }
 
 async function main() {
-  const [command, argument] = process.argv.slice(2);
+  const [command, argument, value] = process.argv.slice(2);
 
   if (command === 'validate') {
     const result = await validateCanonical();
@@ -30,7 +31,25 @@ async function main() {
     return;
   }
 
-  fail('Usage: devland <validate|context <workflow>>');
+  if (command === 'event' && argument === 'append') {
+    if (!value) {
+      fail('Usage: devland event append <json>');
+      return;
+    }
+
+    let event;
+    try {
+      event = JSON.parse(value);
+    } catch {
+      fail('Invalid engineering event JSON');
+      return;
+    }
+
+    print(await appendEngineeringEvent(event));
+    return;
+  }
+
+  fail('Usage: devland <validate|context <workflow>|event append <json>>');
 }
 
 main().catch((error) => {

@@ -1,8 +1,10 @@
 import { access, readFile, readdir } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import YAML from 'yaml';
 
+const DEVLAND_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const PROJECT_PATH = '.devland/project.yaml';
 const STATE_PATH = '.devland/state.yaml';
 const PROJECT_SCHEMA_PATH = 'schemas/project.schema.json';
@@ -38,12 +40,12 @@ function formatAjvErrors(relativePath, errors = []) {
   }));
 }
 
-export async function validateCanonical(root = process.cwd()) {
+export async function validateCanonical(projectRoot = process.cwd(), devlandRoot = DEVLAND_ROOT) {
   const [project, state, projectSchema, stateSchema] = await Promise.all([
-    readYaml(root, PROJECT_PATH),
-    readYaml(root, STATE_PATH),
-    readJson(root, PROJECT_SCHEMA_PATH),
-    readJson(root, STATE_SCHEMA_PATH),
+    readYaml(projectRoot, PROJECT_PATH),
+    readYaml(projectRoot, STATE_PATH),
+    readJson(devlandRoot, PROJECT_SCHEMA_PATH),
+    readJson(devlandRoot, STATE_SCHEMA_PATH),
   ]);
 
   const ajv = new Ajv2020({ allErrors: true, strict: false });
@@ -66,8 +68,8 @@ export async function validateCanonical(root = process.cwd()) {
   };
 }
 
-async function readMarkdownEntry(root, relativePath) {
-  const text = await readText(root, relativePath);
+async function readMarkdownEntry(devlandRoot, relativePath) {
+  const text = await readText(devlandRoot, relativePath);
   const { metadata, body } = parseFrontmatter(text);
   return {
     id: metadata.id ?? path.basename(relativePath, '.md'),
@@ -76,10 +78,10 @@ async function readMarkdownEntry(root, relativePath) {
   };
 }
 
-async function listCorePolicies(root) {
-  const directory = path.join(root, 'core/policies');
+async function listCorePolicies(devlandRoot) {
+  const directory = path.join(devlandRoot, 'core/policies');
   const files = (await readdir(directory)).filter((name) => name.endsWith('.md')).sort();
-  return Promise.all(files.map((file) => readMarkdownEntry(root, `core/policies/${file}`)));
+  return Promise.all(files.map((file) => readMarkdownEntry(devlandRoot, `core/policies/${file}`)));
 }
 
 function profileCandidates(project) {
@@ -115,34 +117,34 @@ async function exists(root, relativePath) {
   }
 }
 
-async function resolveProfiles(root, project) {
+async function resolveProfiles(devlandRoot, project) {
   const resolved = [];
   for (const id of profileCandidates(project)) {
     const relativePath = profilePath(id);
-    if (!relativePath || !(await exists(root, relativePath))) continue;
-    const entry = await readMarkdownEntry(root, relativePath);
+    if (!relativePath || !(await exists(devlandRoot, relativePath))) continue;
+    const entry = await readMarkdownEntry(devlandRoot, relativePath);
     if (entry.id === id) resolved.push(entry);
   }
   return resolved;
 }
 
-export async function resolveContext(workflowId, root = process.cwd()) {
+export async function resolveContext(workflowId, projectRoot = process.cwd(), devlandRoot = DEVLAND_ROOT) {
   if (!/^[a-z0-9][a-z0-9-]*$/.test(workflowId ?? '')) {
     throw new Error(`Unknown workflow: ${workflowId ?? ''}`);
   }
 
-  const validation = await validateCanonical(root);
+  const validation = await validateCanonical(projectRoot, devlandRoot);
   if (!validation.valid) {
     throw new Error(`Canonical context is invalid: ${JSON.stringify(validation.errors)}`);
   }
 
   const workflowPath = `core/workflows/${workflowId}.md`;
-  if (!(await exists(root, workflowPath))) throw new Error(`Unknown workflow: ${workflowId}`);
+  if (!(await exists(devlandRoot, workflowPath))) throw new Error(`Unknown workflow: ${workflowId}`);
 
   const [policies, profiles, workflow] = await Promise.all([
-    listCorePolicies(root),
-    resolveProfiles(root, validation.project),
-    readMarkdownEntry(root, workflowPath),
+    listCorePolicies(devlandRoot),
+    resolveProfiles(devlandRoot, validation.project),
+    readMarkdownEntry(devlandRoot, workflowPath),
   ]);
 
   return {

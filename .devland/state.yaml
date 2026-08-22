@@ -2,6 +2,35 @@ schema: devland.state/v0
 active_work: []
 blocked: []
 recently_completed:
+  - id: devland-v1-package-root-resolution
+    kind: bugfix
+    status: done
+    goal: Make the executable Devland runtime resolve reusable schemas policies profiles and workflows from the installed tool while reading canonical project state from the target repository.
+    scope:
+      allowed:
+        - separate target project root from installed Devland core root
+        - minimal target repository regression coverage
+        - preserve existing validate and context command behavior
+      excluded:
+        - engineering event model
+        - metrics engine
+        - provider adapters
+        - package distribution or registry work
+        - repository mutation commands
+    acceptance:
+      - regression test fails before the fix because a minimal target repository does not contain Devland schemas
+      - validate reads canonical project and state from the target working directory
+      - schemas policies profiles and workflows resolve from the installed Devland package root
+      - existing self-host CLI behavior remains green
+      - full Devland test suite passes after the fix
+    artifacts:
+      spec: docs/superpowers/specs/2026-08-22-devland-v1-flow-contract.md
+      plan: null
+      evidence:
+        - GitHub Actions run 32555571555 verified RED with 28 tests passing and one expected failure because the target repo lacked schemas/project.schema.json
+        - GitHub Actions run 32555605491 verified GREEN after target and installed Devland roots were separated
+    branch: fix/devland-v1-package-root
+    pull_request: PR-6
   - id: devland-v1-iteration-2-executable
     kind: feature
     status: done

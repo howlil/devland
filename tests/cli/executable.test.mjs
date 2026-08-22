@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
+import { copyFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+
+const cliPath = resolve('bin/devland.mjs');
 
 function run(args, cwd = process.cwd()) {
-  return spawnSync(process.execPath, ['bin/devland.mjs', ...args], {
+  return spawnSync(process.execPath, [cliPath, ...args], {
     cwd,
     encoding: 'utf8',
   });
@@ -34,6 +39,25 @@ test('context resolves canonical files, core policies, applicable profiles, and 
   assert.equal(output.project.content.schema, 'devland.project/v0');
   assert.equal(output.state.content.schema, 'devland.state/v0');
   assert.match(output.workflow.content, /smallest valuable slice/i);
+});
+
+test('context resolves Devland core from the installed tool when the target repo only has canonical state', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'devland-target-'));
+  try {
+    await mkdir(join(root, '.devland'));
+    await copyFile('.devland/project.yaml', join(root, '.devland/project.yaml'));
+    await copyFile('.devland/state.yaml', join(root, '.devland/state.yaml'));
+
+    const result = run(['context', 'develop-change'], root);
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.project.path, '.devland/project.yaml');
+    assert.equal(output.workflow.path, 'core/workflows/develop-change.md');
+    assert.ok(output.policies.some((item) => item.id === 'core.engineering'));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test('context rejects an unknown workflow without pretending resolution succeeded', () => {

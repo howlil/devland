@@ -45,10 +45,11 @@ async function main() {
 
   if (command === 'context') {
     if (!argument) {
-      fail('Usage: devland context <workflow>');
+      fail('Usage: devland context <workflow> [change-json]');
       return;
     }
-    print(await resolveContext(argument));
+    const change = value ? parseJson(value, 'change descriptor') : null;
+    print(await resolveContext(argument, undefined, undefined, change));
     return;
   }
 
@@ -78,7 +79,7 @@ async function main() {
     return;
   }
 
-  fail('Usage: devland <validate|doctor|flow|context <workflow>|event append <json>|ingest github <json>>');
+  fail('Usage: devland <validate|doctor|flow|context <workflow> [change-json]|event append <json>|ingest github <json>>');
 }
 
 main().catch((error) => {

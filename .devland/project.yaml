@@ -18,13 +18,15 @@ product:
     - autonomous multi-agent runtime
 platforms: []
 stack:
-  languages: []
+  languages:
+    - javascript
   frameworks: []
-  runtimes: []
+  runtimes:
+    - node
   data_stores: []
 architecture:
-  style: content-first semantic core
-  document: docs/superpowers/specs/2026-08-13-devland-v0-design.md
+  style: content-first semantic core with deterministic executable feedback
+  document: docs/superpowers/specs/2026-08-25-devland-feedback-loop-design.md
 qualities: []
 profiles: []
 delivery:

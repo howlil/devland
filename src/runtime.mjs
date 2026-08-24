@@ -1,4 +1,4 @@
-import { access, readFile, readdir } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
@@ -40,6 +40,43 @@ function formatAjvErrors(relativePath, errors = []) {
   }));
 }
 
+function semanticError(instancePath, message) {
+  return { path: STATE_PATH, instancePath, message };
+}
+
+function validateStateSemantics(state) {
+  const errors = [];
+  const buckets = [
+    ['active_work', new Set(['proposed', 'planned', 'active', 'verifying'])],
+    ['blocked', new Set(['blocked'])],
+    ['recently_completed', new Set(['done', 'abandoned'])],
+  ];
+  const seenIds = new Map();
+
+  for (const [bucket, allowedStatuses] of buckets) {
+    for (const [index, item] of (state[bucket] ?? []).entries()) {
+      if (!allowedStatuses.has(item.status)) {
+        errors.push(semanticError(
+          `/${bucket}/${index}/status`,
+          `${bucket} does not allow status ${item.status}; allowed: ${[...allowedStatuses].join(', ')}`,
+        ));
+      }
+
+      const previous = seenIds.get(item.id);
+      if (previous) {
+        errors.push(semanticError(
+          `/${bucket}/${index}/id`,
+          `duplicate work id ${item.id}; already declared at ${previous}`,
+        ));
+      } else {
+        seenIds.set(item.id, `/${bucket}/${index}`);
+      }
+    }
+  }
+
+  return errors;
+}
+
 export async function validateCanonical(projectRoot = process.cwd(), devlandRoot = DEVLAND_ROOT) {
   const [project, state, projectSchema, stateSchema] = await Promise.all([
     readYaml(projectRoot, PROJECT_PATH),
@@ -57,6 +94,7 @@ export async function validateCanonical(projectRoot = process.cwd(), devlandRoot
   const errors = [
     ...(!projectValid ? formatAjvErrors(PROJECT_PATH, validateProject.errors) : []),
     ...(!stateValid ? formatAjvErrors(STATE_PATH, validateState.errors) : []),
+    ...(stateValid ? validateStateSemantics(state) : []),
   ];
 
   return {
@@ -110,8 +148,8 @@ async function resolveCorePolicies(devlandRoot, policyIds) {
   return resolved;
 }
 
-function profileCandidates(project) {
-  const ids = new Set(project.profiles ?? []);
+function inferredProfileCandidates(project) {
+  const ids = new Set();
 
   for (const type of project.project?.types ?? []) ids.add(`project-types.${type}`);
   for (const quality of project.qualities ?? []) ids.add(`qualities.${quality}`);
@@ -143,15 +181,29 @@ async function exists(root, relativePath) {
   }
 }
 
+async function readProfileIfPresent(devlandRoot, id) {
+  const relativePath = profilePath(id);
+  if (!relativePath || !(await exists(devlandRoot, relativePath))) return null;
+  const entry = await readMarkdownEntry(devlandRoot, relativePath);
+  return entry.id === id ? entry : null;
+}
+
 async function resolveProfiles(devlandRoot, project) {
-  const resolved = [];
-  for (const id of profileCandidates(project)) {
-    const relativePath = profilePath(id);
-    if (!relativePath || !(await exists(devlandRoot, relativePath))) continue;
-    const entry = await readMarkdownEntry(devlandRoot, relativePath);
-    if (entry.id === id) resolved.push(entry);
+  const resolved = new Map();
+
+  for (const id of [...new Set(project.profiles ?? [])].sort()) {
+    const entry = await readProfileIfPresent(devlandRoot, id);
+    if (!entry) throw new Error(`Unknown explicit profile: ${id}`);
+    resolved.set(id, entry);
   }
-  return resolved;
+
+  for (const id of inferredProfileCandidates(project)) {
+    if (resolved.has(id)) continue;
+    const entry = await readProfileIfPresent(devlandRoot, id);
+    if (entry) resolved.set(id, entry);
+  }
+
+  return [...resolved.values()];
 }
 
 export async function resolveContext(workflowId, projectRoot = process.cwd(), devlandRoot = DEVLAND_ROOT) {

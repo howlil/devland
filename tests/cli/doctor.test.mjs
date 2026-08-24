@@ -26,6 +26,8 @@ function run(args, cwd) {
 async function writeCanonical(root, architectureDocument = null) {
   await mkdir(join(root, '.devland'), { recursive: true });
   await writeFile(join(root, '.devland/project.yaml'), `schema: devland.project/v0
+devland:
+  contract: "1"
 project:
   name: fixture
   types: []

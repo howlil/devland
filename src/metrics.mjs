@@ -2,11 +2,11 @@ import { readEngineeringEvents } from './events.mjs';
 import { validateCanonical } from './runtime.mjs';
 
 const METRIC_SPECS = [
-  { name: 'idea_to_production', start: 'work.accepted', end: 'deployment.succeeded', key: 'work_id' },
-  { name: 'review_wait', start: 'review.opened', end: 'review.completed', key: 'change_id' },
-  { name: 'ci_feedback_latency', start: 'ci.started', end: 'ci.completed', key: 'change_id' },
-  { name: 'deployment_latency', start: 'deployment.started', end: 'deployment.succeeded', key: 'deployment_id' },
-  { name: 'failed_deployment_recovery', start: 'deployment.failed', end: 'recovery.succeeded', key: 'deployment_id' },
+  { name: 'idea_to_production', start: 'work.accepted', end: 'deployment.succeeded', keys: ['work_id'], productionEnd: true },
+  { name: 'review_wait', start: 'review.opened', end: 'review.completed', keys: ['change_id'] },
+  { name: 'ci_feedback_latency', start: 'ci.started', end: 'ci.completed', keys: ['change_id'] },
+  { name: 'deployment_latency', start: 'deployment.started', end: 'deployment.succeeded', keys: ['deployment_id', 'environment'] },
+  { name: 'failed_deployment_recovery', start: 'deployment.failed', end: 'recovery.succeeded', keys: ['deployment_id', 'environment'] },
 ];
 
 const BOTTLENECK_METRICS = new Set([
@@ -22,12 +22,26 @@ function timestamp(event) {
   return value;
 }
 
-function pairDurations(events, { start, end, key }) {
+function correlationKey(event, keys) {
+  const values = keys.map((key) => event[key]);
+  if (values.some((value) => !value)) return null;
+  return JSON.stringify(values);
+}
+
+function includeEvent(event, spec, productionEnvironments) {
+  if (event.type !== spec.start && event.type !== spec.end) return false;
+  if (spec.productionEnd && event.type === spec.end) {
+    return productionEnvironments.has(event.environment);
+  }
+  return true;
+}
+
+function pairDurations(events, spec, productionEnvironments) {
   const groups = new Map();
 
   for (const event of events) {
-    if (event.type !== start && event.type !== end) continue;
-    const correlation = event[key];
+    if (!includeEvent(event, spec, productionEnvironments)) continue;
+    const correlation = correlationKey(event, spec.keys);
     if (!correlation) continue;
     const group = groups.get(correlation) ?? [];
     group.push(event);
@@ -40,11 +54,11 @@ function pairDurations(events, { start, end, key }) {
     const pendingStarts = [];
 
     for (const event of ordered) {
-      if (event.type === start) {
+      if (event.type === spec.start) {
         pendingStarts.push(event);
         continue;
       }
-      if (event.type !== end || pendingStarts.length === 0) continue;
+      if (event.type !== spec.end || pendingStarts.length === 0) continue;
 
       const started = pendingStarts.shift();
       const duration = timestamp(event) - timestamp(started);
@@ -65,9 +79,12 @@ function aggregate(durations) {
   };
 }
 
-export function calculateFlowMetrics(events) {
+export function calculateFlowMetrics(events, { productionEnvironments = [] } = {}) {
+  const production = new Set(productionEnvironments);
   const metrics = {};
-  for (const spec of METRIC_SPECS) metrics[spec.name] = aggregate(pairDurations(events, spec));
+  for (const spec of METRIC_SPECS) {
+    metrics[spec.name] = aggregate(pairDurations(events, spec, production));
+  }
 
   let bottleneck = null;
   for (const [metric, value] of Object.entries(metrics)) {
@@ -87,7 +104,9 @@ export async function flowReport(projectRoot = process.cwd()) {
   }
 
   const events = await readEngineeringEvents(projectRoot);
-  const { metrics, bottleneck } = calculateFlowMetrics(events);
+  const { metrics, bottleneck } = calculateFlowMetrics(events, {
+    productionEnvironments: canonical.project.delivery?.production_environments ?? [],
+  });
   return {
     event_count: events.length,
     metrics,

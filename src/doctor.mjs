@@ -1,6 +1,7 @@
-import { access, readFile, readdir } from 'node:fs/promises';
-import path from 'node:path';
+import { collectRepositoryFacts, classifyProbeError, probeRepositoryPath } from './facts/repository.mjs';
 import { validateCanonical } from './runtime.mjs';
+
+export { classifyProbeError };
 
 const DOCTOR_CATEGORIES = [
   'project-model drift',
@@ -14,125 +15,43 @@ const DOCTOR_CATEGORIES = [
   'over-generated context with no current applicability',
 ];
 
-export function classifyProbeError(error) {
-  return error?.code === 'ENOENT' || error?.code === 'ENOTDIR' ? 'absent' : 'inaccessible';
-}
-
-async function probeRepositoryPath(root, relativePath) {
-  try {
-    await access(path.join(root, relativePath));
-    return { status: 'present', path: relativePath };
-  } catch (error) {
-    return {
-      status: classifyProbeError(error),
-      path: relativePath,
-      error_code: error?.code ?? null,
-    };
-  }
-}
-
-async function readJsonEvidence(root, relativePath) {
-  const probe = await probeRepositoryPath(root, relativePath);
-  if (probe.status !== 'present') return { value: null, issue: probe.status === 'inaccessible' ? probe : null };
-  try {
-    return { value: JSON.parse(await readFile(path.join(root, relativePath), 'utf8')), issue: null };
-  } catch (error) {
-    return {
-      value: null,
-      issue: { status: 'inaccessible', path: relativePath, error_code: error?.code ?? 'INVALID_JSON' },
-    };
-  }
-}
-
-async function collectFiles(root, relativePath) {
-  const probe = await probeRepositoryPath(root, relativePath);
-  if (probe.status === 'absent') return { files: [], issues: [] };
-  if (probe.status === 'inaccessible') return { files: [], issues: [probe] };
-
-  let entries;
-  try {
-    entries = await readdir(path.join(root, relativePath), { withFileTypes: true });
-  } catch (error) {
-    return {
-      files: [],
-      issues: [{ status: 'inaccessible', path: relativePath, error_code: error?.code ?? null }],
-    };
-  }
-
-  const files = [];
-  const issues = [];
-  for (const entry of entries) {
-    const child = path.posix.join(relativePath, entry.name);
-    if (entry.isDirectory()) {
-      const nested = await collectFiles(root, child);
-      files.push(...nested.files);
-      issues.push(...nested.issues);
-    } else if (entry.isFile()) {
-      files.push(child);
-    }
-  }
-  return { files, issues };
-}
+const STACK_FIELD_BY_FACT_KIND = new Map([
+  ['language', 'languages'],
+  ['runtime', 'runtimes'],
+]);
 
 function normalized(values = []) {
   return new Set(values.map((value) => String(value).toLowerCase()));
 }
 
-function stackFinding(kind, canonical, observed, evidence) {
+function stackFinding(field, canonical, fact) {
   return {
     category: 'stack/runtime drift',
-    evidence,
+    evidence: fact.evidence,
     canonical,
-    observed: [observed],
-    recommendation: `Add ${observed} to stack.${kind}.`,
+    observed: [fact.value],
+    recommendation: `Add ${fact.value} to stack.${field}.`,
   };
 }
 
 async function detectStackCheck(projectRoot, project) {
+  const evidence = await collectRepositoryFacts(projectRoot);
   const findings = [];
-  const issues = [];
-  const packageEvidence = await readJsonEvidence(projectRoot, 'package.json');
-  if (packageEvidence.issue) issues.push(packageEvidence.issue);
 
-  const sourceResults = await Promise.all([
-    collectFiles(projectRoot, 'src'),
-    collectFiles(projectRoot, 'bin'),
-  ]);
-  const sourceFiles = sourceResults.flatMap((result) => result.files);
-  issues.push(...sourceResults.flatMap((result) => result.issues));
-
-  const javascriptEvidence = sourceFiles.filter((file) => /\.(?:mjs|cjs|js|jsx)$/i.test(file));
-  const canonicalLanguages = normalized(project.stack?.languages);
-  const canonicalRuntimes = normalized(project.stack?.runtimes);
-
-  if (javascriptEvidence.length > 0 && !canonicalLanguages.has('javascript')) {
-    findings.push(stackFinding('languages', project.stack?.languages ?? [], 'javascript', javascriptEvidence));
-  }
-
-  const nodeEvidence = [];
-  if (packageEvidence.value?.bin || packageEvidence.value?.type === 'module') nodeEvidence.push('package.json');
-
-  const workflows = await collectFiles(projectRoot, '.github/workflows');
-  issues.push(...workflows.issues);
-  for (const file of workflows.files) {
-    if (!/\.ya?ml$/i.test(file)) continue;
-    try {
-      const text = await readFile(path.join(projectRoot, file), 'utf8');
-      if (/setup-node|node-version/i.test(text)) nodeEvidence.push(file);
-    } catch (error) {
-      issues.push({ status: 'inaccessible', path: file, error_code: error?.code ?? null });
+  for (const fact of evidence.facts) {
+    const field = STACK_FIELD_BY_FACT_KIND.get(fact.kind);
+    if (!field) continue;
+    const canonical = project.stack?.[field] ?? [];
+    if (!normalized(canonical).has(String(fact.value).toLowerCase())) {
+      findings.push(stackFinding(field, canonical, fact));
     }
-  }
-
-  if (nodeEvidence.length > 0 && !canonicalRuntimes.has('node')) {
-    findings.push(stackFinding('runtimes', project.stack?.runtimes ?? [], 'node', [...new Set(nodeEvidence)]));
   }
 
   return {
     category: 'stack/runtime drift',
-    status: findings.length > 0 ? 'findings' : issues.length > 0 ? 'partial' : 'clean',
+    status: findings.length > 0 ? 'findings' : evidence.uncertainty.length > 0 ? 'partial' : 'clean',
     findings,
-    uncertainty: issues,
+    uncertainty: evidence.uncertainty,
   };
 }
 

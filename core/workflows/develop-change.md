@@ -1,5 +1,11 @@
 ---
 id: develop-change
+policies:
+  - core.engineering
+  - core.dependencies
+  - core.git
+  - core.testing
+  - core.verification
 requires:
   - repository.read
 optional:

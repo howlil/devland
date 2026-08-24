@@ -4,8 +4,20 @@ import { spawnSync } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { classifyProbeError } from '../../src/doctor.mjs';
 
 const cliPath = resolve('bin/devland.mjs');
+const doctorCategories = [
+  'project-model drift',
+  'stack/runtime drift',
+  'architecture-document drift',
+  'stale work state',
+  'adapter duplication/divergence',
+  'invalid/missing referenced files',
+  'policy conflict',
+  'missing verification evidence for claimed-done work',
+  'over-generated context with no current applicability',
+];
 
 function run(args, cwd) {
   return spawnSync(process.execPath, [cliPath, ...args], { cwd, encoding: 'utf8' });
@@ -56,6 +68,7 @@ test('doctor reports deterministic Node and JavaScript stack drift', async () =>
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const output = JSON.parse(result.stdout);
+    assert.equal(output.status, 'findings');
     assert.ok(output.findings.some((finding) =>
       finding.category === 'stack/runtime drift' &&
       finding.observed.includes('node') &&
@@ -78,6 +91,7 @@ test('doctor reports missing referenced architecture documents', async () => {
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const output = JSON.parse(result.stdout);
+    assert.equal(output.status, 'findings');
     assert.ok(output.findings.some((finding) =>
       finding.category === 'invalid/missing referenced files' &&
       finding.evidence.includes('docs/architecture.md')
@@ -85,4 +99,30 @@ test('doctor reports missing referenced architecture documents', async () => {
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test('doctor is partial rather than globally healthy when categories are not evaluated', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'devland-doctor-coverage-'));
+  try {
+    await writeCanonical(root);
+
+    const result = run(['doctor'], root);
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.status, 'partial');
+    assert.equal(Object.hasOwn(output, 'healthy'), false);
+    assert.deepEqual(output.checks.map((check) => check.category), doctorCategories);
+    assert.equal(output.checks.some((check) => check.status === 'not_evaluated'), true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('probe error classification treats only missing-path errors as absent', () => {
+  assert.equal(classifyProbeError({ code: 'ENOENT' }), 'absent');
+  assert.equal(classifyProbeError({ code: 'ENOTDIR' }), 'absent');
+  assert.equal(classifyProbeError({ code: 'EACCES' }), 'inaccessible');
+  assert.equal(classifyProbeError({ code: 'EPERM' }), 'inaccessible');
+  assert.equal(classifyProbeError(new Error('I/O failure')), 'inaccessible');
 });

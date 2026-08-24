@@ -1,4 +1,6 @@
 schema: devland.project/v0
+devland:
+  contract: "1"
 project:
   name: example
   types:

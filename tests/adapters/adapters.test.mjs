@@ -53,7 +53,12 @@ test('Devland consumes its own canonical project and state schemas', async () =>
 
   assert.equal(projectValidate(project), true, JSON.stringify(projectValidate.errors));
   assert.equal(stateValidate(state), true, JSON.stringify(stateValidate.errors));
-  assert.deepEqual(project.stack, { languages: [], frameworks: [], runtimes: [], data_stores: [] });
+  assert.deepEqual(project.stack, {
+    languages: ['javascript'],
+    frameworks: [],
+    runtimes: ['node'],
+    data_stores: [],
+  });
   assert.equal(project.profiles.length, 0);
   const workItems = [...state.active_work, ...state.recently_completed];
   assert.equal(workItems.some((item) => item.id === 'devland-v0'), true);

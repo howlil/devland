@@ -30,7 +30,7 @@ function event(id, type, occurredAt, linkage = {}) {
   };
 }
 
-test('flow calculates correlated engineering feedback durations and bottleneck', async () => {
+test('flow calculates correlated engineering feedback durations and actionable bottleneck', async () => {
   const root = await createTarget();
   try {
     const events = [
@@ -59,7 +59,7 @@ test('flow calculates correlated engineering feedback durations and bottleneck',
     assert.deepEqual(output.metrics.ci_feedback_latency, { samples: 1, average_ms: 300_000, max_ms: 300_000 });
     assert.deepEqual(output.metrics.deployment_latency, { samples: 1, average_ms: 600_000, max_ms: 600_000 });
     assert.deepEqual(output.metrics.failed_deployment_recovery, { samples: 1, average_ms: 1_200_000, max_ms: 1_200_000 });
-    assert.deepEqual(output.bottleneck, { metric: 'idea_to_production', average_ms: 3_000_000 });
+    assert.deepEqual(output.bottleneck, { metric: 'failed_deployment_recovery', average_ms: 1_200_000 });
   } finally {
     await rm(root, { recursive: true, force: true });
   }

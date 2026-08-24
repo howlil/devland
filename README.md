@@ -40,6 +40,7 @@ Devland is not an IDE, coding-agent runtime, repository provider, CI engine, dep
 - **Workflows** — vendor-neutral procedures that declare semantic capabilities instead of provider APIs.
 - **Adapters** — projections for a target runtime or instruction format; they are never a second source of project truth.
 - **Engineering events** — normalized provider-agnostic evidence stored locally outside canonical state. Event types require the linkage necessary to interpret them.
+- **Provider normalizers** — deterministic translators from concrete provider evidence into Devland events. They do not own provider authentication or network access.
 - **Flow metrics** — deterministic timing derived from correlated engineering events and explicit production-environment semantics.
 
 ## Minimal target repository
@@ -79,6 +80,7 @@ devland validate
 devland doctor
 devland context <workflow>
 devland event append '<json>'
+devland ingest github '<json>'
 devland flow
 ```
 
@@ -86,9 +88,12 @@ devland flow
 - `doctor` compares canonical state with deterministic repository evidence without rewriting canonical truth. Its report exposes per-category coverage and returns `partial` when known diagnostic categories have not been evaluated instead of claiming global health.
 - `context` resolves canonical state, only the baseline core policies declared by the requested workflow, and applicable profiles for an AI runtime.
 - `event append` validates event shape, type-specific linkage, real timestamps, and stable event identity before writing normalized evidence to `.devland/runtime/events.ndjson`.
+- `ingest github` accepts already-obtained GitHub commit, pull-request, workflow-run, and deployment evidence; converts it to stable `devland.event/v1` events; and merges it idempotently into the local spool under a repository-local ingestion lock.
 - `flow` calculates idea-to-production plus actionable stage timing for review, CI feedback, deployment, and failed-deployment recovery. Idea-to-production closes only on a deployment success whose environment is declared production; deployment/recovery pairing includes environment as part of correlation.
 
-`.devland/runtime/events.ndjson` is a local evidence spool, not an authoritative telemetry service. Provider-backed durable evidence collection remains outside the current executable scope.
+A runtime or provider integration remains responsible for reading GitHub. Devland does not store GitHub tokens or make authenticated GitHub API calls. The same provider history can be replayed into a fresh checkout because normalized event IDs are derived deterministically from repository and provider identities.
+
+`.devland/runtime/events.ndjson` is a local evidence spool/cache, not the authoritative provider history. Batch ingestion validates the complete incoming batch, detects stable-ID conflicts, serializes concurrent local writers, and replays exact duplicate evidence without duplication.
 
 The executable does not own repository authentication or execute provider-specific repository, CI, deployment, or production actions.
 
@@ -115,7 +120,7 @@ valuable intent
     -> learn
 ```
 
-Flow metrics use only complete, semantically valid evidence with sufficient correlation. Missing linkage, unknown production environments, or corrupted event evidence are not converted into invented metrics. Provider adapters, automated telemetry collection, dashboards, databases, and autonomous agent orchestration remain outside the current executable scope.
+Flow metrics use only complete, semantically valid evidence with sufficient correlation. Missing linkage, unknown production environments, or corrupted event evidence are not converted into invented metrics. Provider authentication/collection, dashboards, databases, and autonomous agent orchestration remain outside the current executable scope.
 
 ## Development and verification
 

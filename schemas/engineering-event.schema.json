@@ -59,5 +59,27 @@
     "data": {
       "type": "object"
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "enum": ["work.accepted", "work.started"] } }, "required": ["type"] },
+      "then": { "required": ["work_id"] }
+    },
+    {
+      "if": { "properties": { "type": { "const": "change.committed" } }, "required": ["type"] },
+      "then": { "required": ["change_id", "commit_sha"] }
+    },
+    {
+      "if": { "properties": { "type": { "enum": ["review.opened", "review.completed", "ci.started", "ci.completed"] } }, "required": ["type"] },
+      "then": { "required": ["change_id"] }
+    },
+    {
+      "if": { "properties": { "type": { "enum": ["deployment.started", "deployment.failed", "recovery.succeeded"] } }, "required": ["type"] },
+      "then": { "required": ["deployment_id", "environment"] }
+    },
+    {
+      "if": { "properties": { "type": { "const": "deployment.succeeded" } }, "required": ["type"] },
+      "then": { "required": ["deployment_id", "environment", "work_id"] }
+    }
+  ]
 }

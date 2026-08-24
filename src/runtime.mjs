@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import YAML from 'yaml';
+import { changeProfileIds, classifyChange } from './change.mjs';
 
 const DEVLAND_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const PROJECT_PATH = '.devland/project.yaml';
@@ -203,13 +204,21 @@ async function readProfileIfPresent(devlandRoot, id) {
   return entry.id === id ? entry : null;
 }
 
-async function resolveProfiles(devlandRoot, project) {
+async function resolveRequiredProfiles(devlandRoot, ids, errorPrefix) {
+  const resolved = [];
+  for (const id of [...new Set(ids)].sort()) {
+    const entry = await readProfileIfPresent(devlandRoot, id);
+    if (!entry) throw new Error(`${errorPrefix}: ${id}`);
+    resolved.push(entry);
+  }
+  return resolved;
+}
+
+async function resolveProfiles(devlandRoot, project, change = null) {
   const resolved = new Map();
 
-  for (const id of [...new Set(project.profiles ?? [])].sort()) {
-    const entry = await readProfileIfPresent(devlandRoot, id);
-    if (!entry) throw new Error(`Unknown explicit profile: ${id}`);
-    resolved.set(id, entry);
+  for (const entry of await resolveRequiredProfiles(devlandRoot, project.profiles ?? [], 'Unknown explicit profile')) {
+    resolved.set(entry.id, entry);
   }
 
   for (const id of inferredProfileCandidates(project)) {
@@ -218,14 +227,24 @@ async function resolveProfiles(devlandRoot, project) {
     if (entry) resolved.set(id, entry);
   }
 
+  for (const entry of await resolveRequiredProfiles(devlandRoot, changeProfileIds(change), 'Unknown change profile')) {
+    resolved.set(entry.id, entry);
+  }
+
   return [...resolved.values()];
 }
 
-export async function resolveContext(workflowId, projectRoot = process.cwd(), devlandRoot = DEVLAND_ROOT) {
+export async function resolveContext(
+  workflowId,
+  projectRoot = process.cwd(),
+  devlandRoot = DEVLAND_ROOT,
+  change = null,
+) {
   if (!/^[a-z0-9][a-z0-9-]*$/.test(workflowId ?? '')) {
     throw new Error(`Unknown workflow: ${workflowId ?? ''}`);
   }
 
+  const execution = classifyChange(change);
   const validation = await validateCanonical(projectRoot, devlandRoot);
   if (!validation.valid) {
     throw new Error(`Canonical context is invalid: ${JSON.stringify(validation.errors)}`);
@@ -237,7 +256,7 @@ export async function resolveContext(workflowId, projectRoot = process.cwd(), de
   const workflowDocument = await readMarkdownDocument(devlandRoot, workflowPath);
   const [policies, profiles] = await Promise.all([
     resolveCorePolicies(devlandRoot, workflowDocument.metadata.policies),
-    resolveProfiles(devlandRoot, validation.project),
+    resolveProfiles(devlandRoot, validation.project, change),
   ]);
 
   return {
@@ -245,6 +264,7 @@ export async function resolveContext(workflowId, projectRoot = process.cwd(), de
     state: { path: STATE_PATH, content: validation.state },
     policies,
     profiles,
+    execution,
     workflow: workflowDocument.entry,
   };
 }

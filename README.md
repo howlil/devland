@@ -40,6 +40,7 @@ Devland is not an IDE, coding-agent runtime, repository provider, CI engine, dep
 - **Change context** — transient deterministic risk signals select a proportional execution lane without turning one risky change into permanent project-wide ceremony.
 - **Workflows** — vendor-neutral procedures that declare semantic capabilities instead of provider APIs.
 - **Adapters** — projections for a target runtime or instruction format; they are never a second source of project truth.
+- **Adapter evals** — deterministic parity checks that verify different adapter paths preserve the same canonical references, workflow, policies, profiles, execution lane, and declared capabilities.
 - **Engineering events** — normalized provider-agnostic evidence stored locally outside canonical state. Event types require the linkage necessary to interpret them.
 - **Provider normalizers** — deterministic translators from concrete provider evidence into Devland events. They do not own provider authentication or network access.
 - **Flow metrics** — deterministic timing derived from correlated engineering events and explicit production-environment semantics.
@@ -80,6 +81,7 @@ Devland includes a small deterministic Node.js CLI:
 devland validate
 devland doctor
 devland context <workflow> [change-json]
+devland eval adapters [change-json]
 devland event append '<json>'
 devland ingest github '<json>'
 devland flow
@@ -88,6 +90,7 @@ devland flow
 - `validate` checks canonical project/work state against their schemas and deterministic domain invariants, including the supported Devland behavioral contract.
 - `doctor` compares canonical state with deterministic repository evidence without rewriting canonical truth. Its report exposes per-category coverage and returns `partial` when known diagnostic categories have not been evaluated instead of claiming global health.
 - `context` resolves canonical state, workflow baseline policies, applicable project profiles, and optional transient change-risk expansion for an AI runtime.
+- `eval adapters` runs the same resolved `develop-change` semantics through the current generic and AGENTS adapter paths and fails if semantic/capability parity diverges; it also reports projection byte size for context-efficiency regression tracking.
 - `event append` validates event shape, type-specific linkage, real timestamps, and stable event identity before writing normalized evidence to `.devland/runtime/events.ndjson`.
 - `ingest github` accepts already-obtained GitHub commit, pull-request, workflow-run, and deployment evidence; converts it to stable `devland.event/v1` events; and merges it idempotently into the local spool under a repository-local ingestion lock.
 - `flow` calculates idea-to-production plus actionable stage timing for review, CI feedback, deployment, and failed-deployment recovery. Idea-to-production closes only on a deployment success whose environment is declared production; deployment/recovery pairing includes environment as part of correlation.
@@ -107,6 +110,16 @@ Current deterministic lanes are:
 - **deliberate** — security-boundary, irreversible-migration, data-loss-risk, concurrency-semantics, compatibility-break, or large-blast-radius work.
 
 The highest-risk declared signal wins. Unknown signals fail explicitly rather than silently reducing ceremony. A security-boundary signal also activates the existing `qualities.security-sensitive` guidance even when the entire project is not permanently marked security-sensitive. Change descriptors are never written into canonical project state by context resolution.
+
+### Adapter semantic evaluation
+
+```bash
+devland eval adapters '{"signals":["security-boundary"]}'
+```
+
+The current eval compares generic and AGENTS adapter projections over the same resolved context. It verifies semantic parity and capability parity and reports the serialized projection size for each adapter. Projections intentionally contain canonical references and semantic IDs rather than copied project/workflow contents.
+
+This is **not** an LLM quality benchmark and does not inspect or store model chain-of-thought. Model/runtime behavior evaluation can be layered on top later when a reproducible runtime execution surface exists; the current gate establishes the deterministic semantic baseline those evaluations must preserve.
 
 A runtime or provider integration remains responsible for reading GitHub. Devland does not store GitHub tokens or make authenticated GitHub API calls. The same provider history can be replayed into a fresh checkout because normalized event IDs are derived deterministically from repository and provider identities.
 

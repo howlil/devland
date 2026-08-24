@@ -9,6 +9,7 @@ const PROJECT_PATH = '.devland/project.yaml';
 const STATE_PATH = '.devland/state.yaml';
 const PROJECT_SCHEMA_PATH = 'schemas/project.schema.json';
 const STATE_SCHEMA_PATH = 'schemas/state.schema.json';
+const SUPPORTED_CONTRACTS = new Set(['1']);
 
 async function readText(root, relativePath) {
   return readFile(path.join(root, relativePath), 'utf8');
@@ -40,8 +41,18 @@ function formatAjvErrors(relativePath, errors = []) {
   }));
 }
 
-function semanticError(instancePath, message) {
-  return { path: STATE_PATH, instancePath, message };
+function semanticError(pathName, instancePath, message) {
+  return { path: pathName, instancePath, message };
+}
+
+function validateProjectSemantics(project) {
+  const contract = project.devland?.contract;
+  if (SUPPORTED_CONTRACTS.has(contract)) return [];
+  return [semanticError(
+    PROJECT_PATH,
+    '/devland/contract',
+    `unsupported Devland contract ${contract ?? 'missing'}; supported: ${[...SUPPORTED_CONTRACTS].join(', ')}`,
+  )];
 }
 
 function validateStateSemantics(state) {
@@ -57,6 +68,7 @@ function validateStateSemantics(state) {
     for (const [index, item] of (state[bucket] ?? []).entries()) {
       if (!allowedStatuses.has(item.status)) {
         errors.push(semanticError(
+          STATE_PATH,
           `/${bucket}/${index}/status`,
           `${bucket} does not allow status ${item.status}; allowed: ${[...allowedStatuses].join(', ')}`,
         ));
@@ -65,6 +77,7 @@ function validateStateSemantics(state) {
       const previous = seenIds.get(item.id);
       if (previous) {
         errors.push(semanticError(
+          STATE_PATH,
           `/${bucket}/${index}/id`,
           `duplicate work id ${item.id}; already declared at ${previous}`,
         ));
@@ -94,6 +107,7 @@ export async function validateCanonical(projectRoot = process.cwd(), devlandRoot
   const errors = [
     ...(!projectValid ? formatAjvErrors(PROJECT_PATH, validateProject.errors) : []),
     ...(!stateValid ? formatAjvErrors(STATE_PATH, validateState.errors) : []),
+    ...(projectValid ? validateProjectSemantics(project) : []),
     ...(stateValid ? validateStateSemantics(state) : []),
   ];
 

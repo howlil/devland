@@ -60,8 +60,11 @@ test('Devland consumes its own canonical project and state schemas', async () =>
     data_stores: [],
   });
   assert.equal(project.profiles.length, 0);
-  const workItems = [...state.active_work, ...state.recently_completed];
-  assert.equal(workItems.some((item) => item.id === 'devland-v0'), true);
+  assert.equal(state.active_work.length, 0);
+  assert.equal(state.blocked.length, 0);
+  assert.equal(state.recently_completed[0]?.id, 'devland-v1-iteration-11-governance');
+  assert.equal(state.recently_completed.some((item) => item.id === 'devland-v1-iteration-7-canonical-invariants'), true);
+  assert.equal(state.recently_completed.some((item) => item.id === 'devland-v0'), false);
 });
 
 test('root AGENTS is a router and README keeps Devland positioned as a tool contract', async () => {

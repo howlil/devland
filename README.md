@@ -69,7 +69,7 @@ devland flow
 - `doctor` compares canonical state with deterministic repository evidence and reports drift without rewriting canonical truth.
 - `context` resolves canonical state, only the baseline core policies declared by the requested workflow, and applicable profiles for an AI runtime.
 - `event append` validates and idempotently stores normalized engineering evidence in `.devland/runtime/events.ndjson`.
-- `flow` calculates idea-to-production, review wait, CI feedback latency, deployment latency, failed-deployment recovery, and the largest average-duration bottleneck from complete correlated event pairs.
+- `flow` calculates idea-to-production plus actionable stage timing for review, CI feedback, deployment, and failed-deployment recovery; the reported bottleneck is the actionable stage with the largest average duration from complete correlated event pairs.
 
 The executable does not own repository authentication or execute provider-specific repository, CI, deployment, or production actions.
 

@@ -1,4 +1,5 @@
-import { appendFile, mkdir, readFile } from 'node:fs/promises';
+import { appendFile, mkdir, open, readFile, rm } from 'node:fs/promises';
+import { setTimeout as delay } from 'node:timers/promises';
 import { isDeepStrictEqual } from 'node:util';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
@@ -6,6 +7,7 @@ import { validateCanonical } from './runtime.mjs';
 
 const EVENT_SCHEMA_URL = new URL('../schemas/engineering-event.schema.json', import.meta.url);
 export const EVENT_LOG_PATH = '.devland/runtime/events.ndjson';
+const EVENT_LOCK_PATH = '.devland/runtime/events.lock';
 
 async function loadValidator() {
   const schema = JSON.parse(await readFile(EVENT_SCHEMA_URL, 'utf8'));
@@ -60,40 +62,81 @@ async function readExistingEvents(logPath, validate) {
   return events;
 }
 
-export async function readEngineeringEvents(projectRoot = process.cwd()) {
-  const validate = await loadValidator();
-  return readExistingEvents(path.join(projectRoot, EVENT_LOG_PATH), validate);
+async function withEventLock(projectRoot, fn) {
+  const lockPath = path.join(projectRoot, EVENT_LOCK_PATH);
+  await mkdir(path.dirname(lockPath), { recursive: true });
+  const deadline = Date.now() + 3000;
+  let handle;
+
+  while (!handle) {
+    try {
+      handle = await open(lockPath, 'wx');
+    } catch (error) {
+      if (error?.code !== 'EEXIST') throw error;
+      if (Date.now() >= deadline) throw new Error('Engineering event ingestion lock timeout');
+      await delay(10);
+    }
+  }
+
+  try {
+    return await fn();
+  } finally {
+    await handle.close();
+    await rm(lockPath, { force: true });
+  }
 }
 
-export async function appendEngineeringEvent(event, projectRoot = process.cwd()) {
+export async function readEngineeringEvents(projectRoot = process.cwd()) {
+  const validate = await loadValidator();
+  const logPath = path.join(projectRoot, EVENT_LOG_PATH);
+  return withEventLock(projectRoot, () => readExistingEvents(logPath, validate));
+}
+
+export async function ingestEngineeringEvents(events, projectRoot = process.cwd()) {
+  if (!Array.isArray(events)) throw new Error('Engineering event batch must be an array');
+
   const canonical = await validateCanonical(projectRoot);
   if (!canonical.valid) {
     throw new Error(`Canonical context is invalid: ${JSON.stringify(canonical.errors)}`);
   }
 
   const validate = await loadValidator();
-  validateEventWith(event, validate);
+  for (const event of events) validateEventWith(event, validate);
 
   const logPath = path.join(projectRoot, EVENT_LOG_PATH);
-  const existingEvents = await readExistingEvents(logPath, validate);
-  const existing = existingEvents.find((candidate) => candidate.id === event.id);
+  return withEventLock(projectRoot, async () => {
+    const existingEvents = await readExistingEvents(logPath, validate);
+    const byId = new Map(existingEvents.map((event) => [event.id, event]));
+    const additions = [];
 
-  if (existing) {
-    if (!isDeepStrictEqual(existing, event)) {
-      throw new Error(`Engineering event id conflict: ${event.id}`);
+    for (const event of events) {
+      const existing = byId.get(event.id);
+      if (existing) {
+        if (!isDeepStrictEqual(existing, event)) {
+          throw new Error(`Engineering event id conflict: ${event.id}`);
+        }
+        continue;
+      }
+      byId.set(event.id, event);
+      additions.push(event);
     }
+
+    if (additions.length > 0) {
+      await appendFile(logPath, `${additions.map((event) => JSON.stringify(event)).join('\n')}\n`, 'utf8');
+    }
+
     return {
-      appended: false,
+      appended: additions.length,
+      total: existingEvents.length + additions.length,
       path: EVENT_LOG_PATH,
-      event,
     };
-  }
+  });
+}
 
-  await mkdir(path.dirname(logPath), { recursive: true });
-  await appendFile(logPath, `${JSON.stringify(event)}\n`, 'utf8');
-
+export async function appendEngineeringEvent(event, projectRoot = process.cwd()) {
+  const result = await ingestEngineeringEvents([event], projectRoot);
   return {
-    appended: true,
+    appended: result.appended === 1,
     path: EVENT_LOG_PATH,
     event,
   };

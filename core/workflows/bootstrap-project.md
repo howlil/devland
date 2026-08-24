@@ -1,5 +1,10 @@
 ---
 id: bootstrap-project
+policies:
+  - core.engineering
+  - core.documentation
+  - core.verification
+  - core.git
 requires: []
 optional:
   - repository.read

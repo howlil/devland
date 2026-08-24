@@ -1,5 +1,9 @@
 ---
 id: doctor-project
+policies:
+  - core.engineering
+  - core.documentation
+  - core.verification
 requires:
   - repository.read
 optional:

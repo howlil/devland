@@ -68,20 +68,46 @@ export async function validateCanonical(projectRoot = process.cwd(), devlandRoot
   };
 }
 
-async function readMarkdownEntry(devlandRoot, relativePath) {
+async function readMarkdownDocument(devlandRoot, relativePath) {
   const text = await readText(devlandRoot, relativePath);
   const { metadata, body } = parseFrontmatter(text);
   return {
-    id: metadata.id ?? path.basename(relativePath, '.md'),
-    path: relativePath,
-    content: body.trim(),
+    metadata,
+    entry: {
+      id: metadata.id ?? path.basename(relativePath, '.md'),
+      path: relativePath,
+      content: body.trim(),
+    },
   };
 }
 
-async function listCorePolicies(devlandRoot) {
-  const directory = path.join(devlandRoot, 'core/policies');
-  const files = (await readdir(directory)).filter((name) => name.endsWith('.md')).sort();
-  return Promise.all(files.map((file) => readMarkdownEntry(devlandRoot, `core/policies/${file}`)));
+async function readMarkdownEntry(devlandRoot, relativePath) {
+  return (await readMarkdownDocument(devlandRoot, relativePath)).entry;
+}
+
+function corePolicyPath(id) {
+  const match = /^core\.([a-z0-9][a-z0-9-]*)$/.exec(id ?? '');
+  return match ? `core/policies/${match[1]}.md` : null;
+}
+
+async function resolveCorePolicies(devlandRoot, policyIds) {
+  if (!Array.isArray(policyIds)) {
+    throw new Error('Workflow does not declare core policies');
+  }
+
+  const resolved = [];
+  for (const id of policyIds) {
+    const relativePath = corePolicyPath(id);
+    if (!relativePath || !(await exists(devlandRoot, relativePath))) {
+      throw new Error(`Unknown declared core policy: ${id}`);
+    }
+    const entry = await readMarkdownEntry(devlandRoot, relativePath);
+    if (entry.id !== id) {
+      throw new Error(`Declared core policy id mismatch: ${id}`);
+    }
+    resolved.push(entry);
+  }
+  return resolved;
 }
 
 function profileCandidates(project) {
@@ -141,10 +167,10 @@ export async function resolveContext(workflowId, projectRoot = process.cwd(), de
   const workflowPath = `core/workflows/${workflowId}.md`;
   if (!(await exists(devlandRoot, workflowPath))) throw new Error(`Unknown workflow: ${workflowId}`);
 
-  const [policies, profiles, workflow] = await Promise.all([
-    listCorePolicies(devlandRoot),
+  const workflowDocument = await readMarkdownDocument(devlandRoot, workflowPath);
+  const [policies, profiles] = await Promise.all([
+    resolveCorePolicies(devlandRoot, workflowDocument.metadata.policies),
     resolveProfiles(devlandRoot, validation.project),
-    readMarkdownEntry(devlandRoot, workflowPath),
   ]);
 
   return {
@@ -152,6 +178,6 @@ export async function resolveContext(workflowId, projectRoot = process.cwd(), de
     state: { path: STATE_PATH, content: validation.state },
     policies,
     profiles,
-    workflow,
+    workflow: workflowDocument.entry,
   };
 }

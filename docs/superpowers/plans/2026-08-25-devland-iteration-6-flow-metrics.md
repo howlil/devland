@@ -4,7 +4,7 @@
 
 **Goal:** Turn normalized engineering events into deterministic flow timing through a new `devland flow` command.
 
-**Architecture:** Reuse the local append-only event log as the evidence source. A new pure metrics module pairs start/end events by stable correlation IDs, reports aggregate timing only for complete pairs, and exposes a bottleneck based on the largest average duration. Missing linkage is skipped rather than inferred.
+**Architecture:** Reuse the local append-only event log as the evidence source. A new pure metrics module pairs start/end events by stable correlation IDs, reports aggregate timing only for complete pairs, and exposes a bottleneck based on the largest average duration among actionable stage metrics. Idea-to-production remains a separate end-to-end cycle metric. Missing linkage is skipped rather than inferred.
 
 **Tech Stack:** Node.js 22 ESM, existing NDJSON event log, Node test runner.
 
@@ -31,7 +31,7 @@
 
 **Interfaces:**
 - `readEngineeringEvents(projectRoot)` returns normalized events from `.devland/runtime/events.ndjson`, or `[]` when the log is absent.
-- `calculateFlowMetrics(events)` returns aggregate metrics and a bottleneck.
+- `calculateFlowMetrics(events)` returns aggregate metrics and an actionable-stage bottleneck.
 - `flowReport(projectRoot)` validates canonical context, loads events, and returns `{ event_count, metrics, bottleneck }`.
 - CLI command: `devland flow`.
 

@@ -9,6 +9,13 @@ const METRIC_SPECS = [
   { name: 'failed_deployment_recovery', start: 'deployment.failed', end: 'recovery.succeeded', key: 'deployment_id' },
 ];
 
+const BOTTLENECK_METRICS = new Set([
+  'review_wait',
+  'ci_feedback_latency',
+  'deployment_latency',
+  'failed_deployment_recovery',
+]);
+
 function timestamp(event) {
   const value = Date.parse(event.occurred_at);
   if (!Number.isFinite(value)) throw new Error(`Invalid engineering event timestamp: ${event.id ?? 'unknown'}`);
@@ -64,7 +71,7 @@ export function calculateFlowMetrics(events) {
 
   let bottleneck = null;
   for (const [metric, value] of Object.entries(metrics)) {
-    if (value.samples === 0) continue;
+    if (!BOTTLENECK_METRICS.has(metric) || value.samples === 0) continue;
     if (!bottleneck || value.average_ms > bottleneck.average_ms) {
       bottleneck = { metric, average_ms: value.average_ms };
     }

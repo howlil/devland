@@ -24,12 +24,13 @@ async function readJson(root, relativePath) {
 }
 
 function parseFrontmatter(text) {
-  if (!text.startsWith('---\n')) return { metadata: {}, body: text };
-  const end = text.indexOf('\n---\n', 4);
-  if (end === -1) return { metadata: {}, body: text };
+  const normalized = text.replace(/\r\n?/g, '\n');
+  if (!normalized.startsWith('---\n')) return { metadata: {}, body: normalized };
+  const end = normalized.indexOf('\n---\n', 4);
+  if (end === -1) return { metadata: {}, body: normalized };
   return {
-    metadata: YAML.parse(text.slice(4, end)) ?? {},
-    body: text.slice(end + 5),
+    metadata: YAML.parse(normalized.slice(4, end)) ?? {},
+    body: normalized.slice(end + 5),
   };
 }
 

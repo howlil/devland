@@ -5,6 +5,7 @@
   "additionalProperties": false,
   "required": [
     "schema",
+    "devland",
     "project",
     "product",
     "platforms",
@@ -18,6 +19,17 @@
   "properties": {
     "schema": {
       "const": "devland.project/v0"
+    },
+    "devland": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract"],
+      "properties": {
+        "contract": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     },
     "project": {
       "type": "object",

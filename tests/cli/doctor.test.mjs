@@ -84,6 +84,24 @@ test('doctor reports deterministic Node and JavaScript stack drift', async () =>
   }
 });
 
+test('doctor consumes normalized Go repository facts without Go-specific category logic', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'devland-doctor-go-'));
+  try {
+    await writeCanonical(root);
+    await writeFile(join(root, 'go.mod'), 'module example.com/service\n\ngo 1.24\n');
+
+    const result = run(['doctor'], root);
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const output = JSON.parse(result.stdout);
+    const stackFindings = output.findings.filter((finding) => finding.category === 'stack/runtime drift');
+    assert.equal(stackFindings.some((finding) => finding.observed.includes('go') && finding.recommendation.includes('stack.languages')), true);
+    assert.equal(stackFindings.some((finding) => finding.observed.includes('go') && finding.recommendation.includes('stack.runtimes')), true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('doctor reports missing referenced architecture documents', async () => {
   const root = await mkdtemp(join(tmpdir(), 'devland-doctor-doc-'));
   try {

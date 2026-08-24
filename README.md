@@ -1,13 +1,14 @@
 # Devland
 
-Devland is a small, agent-agnostic engineering context system for software developed with AI. It standardizes the semantics that should remain consistent across projects—project facts, engineering policy, conditional profiles, current work, and development workflows—without forcing every repository to use the same architecture or the same agent-specific file layout.
+Devland is a small, agent-agnostic engineering context and feedback tool for software developed with AI. It standardizes project facts, engineering policy, conditional profiles, current work, development workflows, and normalized engineering evidence without forcing every repository to use the same architecture or agent-specific file layout.
 
-## What Devland is
-
-Devland v0 is a repository of machine-readable schemas, reusable engineering guidance, capability-aware workflows, adapter contracts, and evidence-backed evaluation fixtures. A runtime such as ChatGPT, Codex, or another coding assistant consumes the relevant Devland context alongside whatever repository tools it actually has.
+## Architecture
 
 ```text
 Devland Core + project canonical state
+                  |
+                  v
+          deterministic runtime
                   |
                   v
                adapter
@@ -16,27 +17,24 @@ Devland Core + project canonical state
              AI runtime
                   |
                   v
-     available repository/tool capabilities
+     repository / CI / production
 ```
 
-The AI runtime reasons and orchestrates. Devland defines reusable engineering semantics. Repository tools provide actions such as reading code, writing files, running commands, or interacting with version control when those capabilities are available.
+The AI runtime reasons and orchestrates. Devland defines reusable engineering semantics and deterministic checks. Repository, CI/CD, deployment, and observability systems remain external capabilities.
 
-## What Devland is not
-
-Devland is not a SaaS product, IDE, coding agent runtime, repository provider, or autonomous orchestration platform. v0 has no web UI, API server, database, custom repository authentication layer, package registry, or user-facing CLI. Those remain deferred until evidence from v0 usage shows that a deterministic executable or service is actually needed.
+Devland is not an IDE, coding-agent runtime, repository provider, CI engine, deployment platform, analytics database, or autonomous multi-agent system.
 
 ## Core concepts
 
 - **Project model** — stable or slowly changing project facts in `.devland/project.yaml`.
-- **Work state** — concise current/recent work information in `.devland/state.yaml`; a work item is universal, while iterations or milestones are optional grouping.
-- **Core policies** — reusable engineering rules such as scope discipline, verification, Git hygiene, dependency discipline, security, testing, and documentation.
-- **Profiles** — conditional guidance activated by a project type, quality concern, stack, or delivery model.
-- **Workflows** — vendor-neutral procedures that declare semantic capabilities instead of hard-coding provider APIs.
-- **Adapters** — projections for a target runtime or instruction format. They route to canonical context and are never a second source of project truth.
+- **Work state** — concise current/recent work information in `.devland/state.yaml`.
+- **Core policies** — reusable engineering rules for scope, verification, Git hygiene, dependencies, security, testing, and documentation.
+- **Profiles** — conditional guidance activated by project type, quality concern, stack, or delivery model.
+- **Workflows** — vendor-neutral procedures that declare semantic capabilities instead of provider APIs.
+- **Adapters** — projections for a target runtime or instruction format; they are never a second source of project truth.
+- **Engineering events** — normalized provider-agnostic evidence stored locally outside canonical state.
 
 ## Minimal target repository
-
-A small Devland-managed project may need only:
 
 ```text
 repo/
@@ -46,36 +44,59 @@ repo/
     └── state.yaml
 ```
 
-Architecture documents, decisions, change specs, plans, and evidence are optional. They should exist only when the project or change is complex enough that the artifact carries unique persistent value.
+Specs, plans, architecture documents, decisions, and evidence artifacts are conditional. They should exist only when they carry durable value that cannot be represented by the minimal canonical state.
 
-## How an AI runtime consumes Devland
+## Current executable
 
-A runtime loads `.devland/project.yaml` and `.devland/state.yaml`, follows any referenced project-local artifacts, then loads only the relevant Devland policies/profiles/workflow for the requested operation. An adapter can package or route that context in a runtime-native form—for example an `AGENTS.md` entry point or an OpenAI Skill—without moving canonical project truth into the adapter.
+Devland now includes a small deterministic Node.js CLI:
 
-Devland currently includes an `AGENTS.md` adapter contract, a generic adapter contract, and an OpenAI bootstrap Skill example. The adapter is intentionally separate from repository connectivity.
+```bash
+devland validate
+devland doctor
+devland context <workflow>
+devland event append '<json>'
+```
 
-## Repository capability separation
+- `validate` checks canonical project and work state against their schemas.
+- `doctor` compares canonical state with deterministic repository evidence and reports drift without rewriting canonical truth.
+- `context` resolves canonical state, the requested workflow, core policies, and applicable profiles for an AI runtime.
+- `event append` validates and idempotently stores normalized engineering evidence in `.devland/runtime/events.ndjson`.
 
-Devland workflows describe capabilities such as `repository.read`, `repository.write`, `vcs.branch`, `shell.execute`, or `ci.read`. They do not implement GitHub, GitLab, filesystem, or CI APIs.
+The executable does not own repository authentication or execute provider-specific repository, CI, deployment, or production actions.
 
-If ChatGPT has repository read access only, `bootstrap-project` can inspect and propose canonical state but must not claim it wrote files. A coding environment with filesystem, shell, and version-control capabilities can execute more of the same workflow. The semantic workflow does not change because the vendor changes.
+## Workflows
 
-## v0 workflows
-
-Devland v0 deliberately defines only three top-level workflows:
+Devland keeps three top-level semantic workflows:
 
 - `bootstrap-project` — normalize a product idea or existing repository into minimal canonical Devland context.
-- `develop-change` — develop one logical change with scope, tests/reproduction, verification, state updates, and capability-aware integration behavior.
-- `doctor-project` — diagnose drift between canonical context, repository evidence, work state, and adapters without automatically rewriting canonical truth.
+- `develop-change` — move one logical change through smallest valuable slices, RED -> GREEN -> REFACTOR, focused verification, prompt integration, and production feedback when observable.
+- `doctor-project` — diagnose drift between canonical context, repository evidence, work state, and adapters.
 
-## Evaluation philosophy
+## v1 feedback direction
 
-Devland is tested against six initial cases: ClipLingo, Podland, Wago, MyPaas, SOP Auto Fill, and an intentionally simple synthetic project. The fixtures test both consistency and restraint: preserve important project-specific constraints, keep universal policy reusable, omit irrelevant profiles, leave unknowns unknown, and avoid creating architecture/plan/evidence artifacts for a tiny project.
+The v1 delivery contract optimizes the complete feedback loop rather than code-generation speed in isolation:
 
-Seeded doctor scenarios additionally exercise stack/runtime drift, adapter divergence, and unsupported completion claims. Semantic runtime evaluation remains manual/agent-assisted in v0; the repository does not call an LLM API to grade itself.
+```text
+valuable intent
+    -> smallest valuable slice
+    -> observable acceptance
+    -> RED -> GREEN -> REFACTOR
+    -> small verified change
+    -> integration
+    -> production
+    -> observe
+    -> learn
+```
 
-Repository contract checks use `npm ci` and `npm test`. These dependencies are development/evaluation tooling for this repository, not part of the Devland product model.
+Normalized engineering events are the evidence boundary for later deterministic flow metrics. Provider adapters, automated telemetry collection, dashboards, databases, and autonomous agent orchestration remain outside the current executable scope.
 
-## Current status
+## Development and verification
 
-The Devland v0 semantic core is implemented and has passed its defined schema, policy/profile, workflow, adapter, eval-fixture, doctor-scenario, and self-host verification gates. Completion evidence is recorded concisely in `.devland/state.yaml`.
+Repository contract checks use:
+
+```bash
+npm ci
+npm test
+```
+
+Devland is dogfooded against its own canonical state and tested against representative project/evaluation fixtures. Completion claims are expected to be backed by fresh verification evidence rather than inferred from code changes alone.

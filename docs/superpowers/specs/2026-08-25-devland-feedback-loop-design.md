@@ -60,7 +60,7 @@ Initial metrics:
 - deployment latency: `deployment.started` -> `deployment.succeeded`, grouped by `deployment_id`;
 - failed deployment recovery: `deployment.failed` -> `recovery.succeeded`, grouped by `deployment_id`.
 
-Each metric reports sample count, average duration, and maximum duration. A bottleneck is the metric with the largest average duration among metrics with samples.
+Each metric reports sample count, average duration, and maximum duration. Idea-to-production is an end-to-end cycle metric and is not treated as a bottleneck stage. The reported bottleneck is the actionable stage metric with the largest average duration among review wait, CI feedback latency, deployment latency, and failed-deployment recovery when samples exist.
 
 No DORA rate metrics, provider adapters, production telemetry collection, or historical database are included in this slice.
 

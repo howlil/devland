@@ -2,6 +2,111 @@ schema: devland.state/v0
 active_work: []
 blocked: []
 recently_completed:
+  - id: devland-v1-iteration-6-flow-metrics
+    kind: feature
+    status: done
+    goal: Turn normalized engineering events into deterministic end-to-end and actionable stage flow timing without adding provider-specific telemetry or storage.
+    scope:
+      allowed:
+        - devland flow CLI command
+        - local engineering event log reading
+        - idea-to-production cycle timing
+        - review wait timing
+        - CI feedback latency
+        - deployment latency
+        - failed deployment recovery timing
+        - actionable stage bottleneck reporting
+        - executable flow metric tests
+      excluded:
+        - provider adapters
+        - automatic telemetry collection
+        - DORA rate metrics
+        - analytics database or dashboard
+        - agent runtime or orchestration
+    acceptance:
+      - flow contract tests fail before the command and metrics engine exist
+      - complete correlated event pairs produce deterministic duration samples
+      - missing linkage is skipped instead of inferred
+      - missing event log produces an empty report
+      - idea-to-production remains an end-to-end cycle metric rather than a bottleneck stage
+      - actionable bottleneck selects the largest average stage duration
+      - full Devland test suite passes after implementation
+    artifacts:
+      spec: docs/superpowers/specs/2026-08-25-devland-feedback-loop-design.md
+      plan: docs/superpowers/plans/2026-08-25-devland-iteration-6-flow-metrics.md
+      evidence:
+        - GitHub Actions run 32771733628 verified RED before devland flow existed
+        - GitHub Actions run 32771945766 verified RED for corrected actionable bottleneck semantics
+        - GitHub Actions run 32772160988 verified GREEN on the final PR head
+    branch: feat/devland-v1-iteration-6-flow-metrics
+    pull_request: PR-10
+  - id: devland-v1-iteration-5-context-relevance
+    kind: feature
+    status: done
+    goal: Resolve only workflow-declared baseline core policies instead of loading the entire core policy directory into every runtime context.
+    scope:
+      allowed:
+        - workflow policy dependency frontmatter
+        - exact deterministic core policy resolution
+        - explicit missing-policy failures
+        - preservation of independent profile resolution
+        - executable context relevance tests
+      excluded:
+        - semantic search
+        - prompt classification
+        - change-risk classification
+        - provider-specific context logic
+        - new dependencies
+    acceptance:
+      - relevance contract tests fail while develop-change still receives unrelated policies
+      - every top-level workflow declares baseline core policy dependencies
+      - context resolves only declared baseline policies
+      - missing declared policies cause explicit resolution failure
+      - profile resolution remains project-driven
+      - full Devland test suite passes after implementation
+    artifacts:
+      spec: docs/superpowers/specs/2026-08-25-devland-feedback-loop-design.md
+      plan: docs/superpowers/plans/2026-08-25-devland-iteration-5-context-relevance.md
+      evidence:
+        - GitHub Actions run 32771458169 verified RED against the previous all-policy resolver
+        - GitHub Actions run 32771600736 verified GREEN after deterministic workflow policy resolution
+    branch: feat/devland-v1-iteration-5-context-relevance
+    pull_request: PR-9
+  - id: devland-v1-iteration-4-doctor
+    kind: feature
+    status: done
+    goal: Add deterministic read-only repository drift diagnosis and dogfood it against Devland's own stale canonical context.
+    scope:
+      allowed:
+        - devland doctor CLI command
+        - deterministic JavaScript and Node stack evidence
+        - missing architecture reference detection
+        - structured read-only doctor findings
+        - self-host canonical stack/runtime reconciliation
+        - README executable-state reconciliation
+        - executable doctor tests
+      excluded:
+        - automatic canonical rewrites
+        - LLM-based repository inference
+        - provider-specific repository logic
+        - database or dashboard
+        - agent runtime or orchestration
+    acceptance:
+      - doctor contract tests fail before devland doctor exists
+      - doctor reports deterministic stack/runtime drift from repository evidence
+      - doctor reports missing referenced architecture documents
+      - doctor never rewrites canonical state
+      - Devland self-hosted project model records JavaScript and Node after evidence is established
+      - full Devland test suite passes after reconciliation
+    artifacts:
+      spec: docs/superpowers/specs/2026-08-25-devland-feedback-loop-design.md
+      plan: docs/superpowers/plans/2026-08-25-devland-iteration-4-doctor.md
+      evidence:
+        - GitHub Actions run 32771106824 verified RED with 33 tests passing and 2 expected doctor failures because the command did not exist
+        - GitHub Actions run 32771209680 verified GREEN after executable doctor implementation
+        - GitHub Actions run 32771297276 verified GREEN after self-host canonical and README reconciliation
+    branch: feat/devland-v1-iteration-4-doctor
+    pull_request: PR-8
   - id: devland-v1-iteration-3-events
     kind: feature
     status: done

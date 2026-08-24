@@ -2,6 +2,7 @@
 
 import { doctorProject } from '../src/doctor.mjs';
 import { appendEngineeringEvent, ingestEngineeringEvents } from '../src/events.mjs';
+import { evaluateAdapterParity } from '../src/evals/adapters.mjs';
 import { flowReport } from '../src/metrics.mjs';
 import { normalizeGitHubEvidence } from '../src/providers/github.mjs';
 import { resolveContext, validateCanonical } from '../src/runtime.mjs';
@@ -53,6 +54,15 @@ async function main() {
     return;
   }
 
+  if (command === 'eval' && argument === 'adapters') {
+    const change = value ? parseJson(value, 'change descriptor') : null;
+    const context = await resolveContext('develop-change', undefined, undefined, change);
+    const report = evaluateAdapterParity(context, ['generic', 'agents-md'], ['repository.read']);
+    print(report);
+    if (report.status !== 'pass') process.exitCode = 1;
+    return;
+  }
+
   if (command === 'event' && argument === 'append') {
     if (!value) {
       fail('Usage: devland event append <json>');
@@ -79,7 +89,7 @@ async function main() {
     return;
   }
 
-  fail('Usage: devland <validate|doctor|flow|context <workflow> [change-json]|event append <json>|ingest github <json>>');
+  fail('Usage: devland <validate|doctor|flow|context <workflow> [change-json]|eval adapters [change-json]|event append <json>|ingest github <json>>');
 }
 
 main().catch((error) => {

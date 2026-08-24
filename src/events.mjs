@@ -40,6 +40,10 @@ async function readExistingEvents(logPath) {
   return events;
 }
 
+export async function readEngineeringEvents(projectRoot = process.cwd()) {
+  return readExistingEvents(path.join(projectRoot, EVENT_LOG_PATH));
+}
+
 export async function appendEngineeringEvent(event, projectRoot = process.cwd()) {
   const canonical = await validateCanonical(projectRoot);
   if (!canonical.valid) {
@@ -52,7 +56,7 @@ export async function appendEngineeringEvent(event, projectRoot = process.cwd())
   }
 
   const logPath = path.join(projectRoot, EVENT_LOG_PATH);
-  const existingEvents = await readExistingEvents(logPath);
+  const existingEvents = await readEngineeringEvents(projectRoot);
   const existing = existingEvents.find((candidate) => candidate.id === event.id);
 
   if (existing) {

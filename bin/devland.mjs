@@ -2,6 +2,7 @@
 
 import { doctorProject } from '../src/doctor.mjs';
 import { appendEngineeringEvent } from '../src/events.mjs';
+import { flowReport } from '../src/metrics.mjs';
 import { resolveContext, validateCanonical } from '../src/runtime.mjs';
 
 function print(value) {
@@ -25,6 +26,11 @@ async function main() {
 
   if (command === 'doctor') {
     print(await doctorProject());
+    return;
+  }
+
+  if (command === 'flow') {
+    print(await flowReport());
     return;
   }
 
@@ -55,7 +61,7 @@ async function main() {
     return;
   }
 
-  fail('Usage: devland <validate|doctor|context <workflow>|event append <json>>');
+  fail('Usage: devland <validate|doctor|flow|context <workflow>|event append <json>>');
 }
 
 main().catch((error) => {

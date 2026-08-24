@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 import { doctorProject } from '../src/doctor.mjs';
-import { appendEngineeringEvent } from '../src/events.mjs';
+import { appendEngineeringEvent, ingestEngineeringEvents } from '../src/events.mjs';
 import { flowReport } from '../src/metrics.mjs';
+import { normalizeGitHubEvidence } from '../src/providers/github.mjs';
 import { resolveContext, validateCanonical } from '../src/runtime.mjs';
 
 function print(value) {
@@ -12,6 +13,14 @@ function print(value) {
 function fail(message) {
   process.stderr.write(`${message}\n`);
   process.exitCode = 1;
+}
+
+function parseJson(value, label) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    throw new Error(`Invalid ${label} JSON`);
+  }
 }
 
 async function main() {
@@ -48,20 +57,28 @@ async function main() {
       fail('Usage: devland event append <json>');
       return;
     }
-
-    let event;
-    try {
-      event = JSON.parse(value);
-    } catch {
-      fail('Invalid engineering event JSON');
-      return;
-    }
-
-    print(await appendEngineeringEvent(event));
+    print(await appendEngineeringEvent(parseJson(value, 'engineering event')));
     return;
   }
 
-  fail('Usage: devland <validate|doctor|flow|context <workflow>|event append <json>>');
+  if (command === 'ingest' && argument === 'github') {
+    if (!value) {
+      fail('Usage: devland ingest github <json>');
+      return;
+    }
+    const events = normalizeGitHubEvidence(parseJson(value, 'GitHub evidence'));
+    const result = await ingestEngineeringEvents(events);
+    print({
+      provider: 'github',
+      normalized_events: events.length,
+      appended: result.appended,
+      total: result.total,
+      path: result.path,
+    });
+    return;
+  }
+
+  fail('Usage: devland <validate|doctor|flow|context <workflow>|event append <json>|ingest github <json>>');
 }
 
 main().catch((error) => {

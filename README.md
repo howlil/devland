@@ -18,6 +18,12 @@ Devland Core + project canonical state
                   |
                   v
      repository / CI / production
+                  |
+                  v
+          normalized evidence
+                  |
+                  v
+             flow feedback
 ```
 
 The AI runtime reasons and orchestrates. Devland defines reusable engineering semantics and deterministic checks. Repository, CI/CD, deployment, and observability systems remain external capabilities.
@@ -33,6 +39,7 @@ Devland is not an IDE, coding-agent runtime, repository provider, CI engine, dep
 - **Workflows** — vendor-neutral procedures that declare semantic capabilities instead of provider APIs.
 - **Adapters** — projections for a target runtime or instruction format; they are never a second source of project truth.
 - **Engineering events** — normalized provider-agnostic evidence stored locally outside canonical state.
+- **Flow metrics** — deterministic timing derived from correlated engineering events.
 
 ## Minimal target repository
 
@@ -48,19 +55,21 @@ Specs, plans, architecture documents, decisions, and evidence artifacts are cond
 
 ## Current executable
 
-Devland now includes a small deterministic Node.js CLI:
+Devland includes a small deterministic Node.js CLI:
 
 ```bash
 devland validate
 devland doctor
 devland context <workflow>
 devland event append '<json>'
+devland flow
 ```
 
 - `validate` checks canonical project and work state against their schemas.
 - `doctor` compares canonical state with deterministic repository evidence and reports drift without rewriting canonical truth.
-- `context` resolves canonical state, the requested workflow, core policies, and applicable profiles for an AI runtime.
+- `context` resolves canonical state, only the baseline core policies declared by the requested workflow, and applicable profiles for an AI runtime.
 - `event append` validates and idempotently stores normalized engineering evidence in `.devland/runtime/events.ndjson`.
+- `flow` calculates idea-to-production, review wait, CI feedback latency, deployment latency, failed-deployment recovery, and the largest average-duration bottleneck from complete correlated event pairs.
 
 The executable does not own repository authentication or execute provider-specific repository, CI, deployment, or production actions.
 
@@ -72,9 +81,7 @@ Devland keeps three top-level semantic workflows:
 - `develop-change` — move one logical change through smallest valuable slices, RED -> GREEN -> REFACTOR, focused verification, prompt integration, and production feedback when observable.
 - `doctor-project` — diagnose drift between canonical context, repository evidence, work state, and adapters.
 
-## v1 feedback direction
-
-The v1 delivery contract optimizes the complete feedback loop rather than code-generation speed in isolation:
+## v1 feedback loop
 
 ```text
 valuable intent
@@ -84,11 +91,12 @@ valuable intent
     -> small verified change
     -> integration
     -> production
-    -> observe
+    -> normalized events
+    -> flow metrics
     -> learn
 ```
 
-Normalized engineering events are the evidence boundary for later deterministic flow metrics. Provider adapters, automated telemetry collection, dashboards, databases, and autonomous agent orchestration remain outside the current executable scope.
+Flow metrics only use evidence with sufficient correlation IDs. Missing linkage is skipped rather than inferred. Provider adapters, automated telemetry collection, dashboards, databases, and autonomous agent orchestration remain outside the current executable scope.
 
 ## Development and verification
 

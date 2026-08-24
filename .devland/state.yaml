@@ -2,356 +2,163 @@ schema: devland.state/v0
 active_work: []
 blocked: []
 recently_completed:
-  - id: devland-v1-iteration-6-flow-metrics
-    kind: feature
+  - id: devland-v1-iteration-11-governance
+    kind: maintenance
     status: done
-    goal: Turn normalized engineering events into deterministic end-to-end and actionable stage flow timing without adding provider-specific telemetry or storage.
+    goal: Align Devland repository governance and cross-platform verification with the trust guarantees the tool expects from target projects.
     scope:
       allowed:
-        - devland flow CLI command
-        - local engineering event log reading
-        - idea-to-production cycle timing
-        - review wait timing
-        - CI feedback latency
-        - deployment latency
-        - failed deployment recovery timing
-        - actionable stage bottleneck reporting
-        - executable flow metric tests
+        - Ubuntu Windows and macOS CI matrix on Node 22
+        - private vulnerability reporting policy
+        - CRLF-safe runtime and test frontmatter parsing
+        - regression coverage for Windows newline behavior
+        - explicit architectural backlog in GitHub issues
       excluded:
-        - provider adapters
-        - automatic telemetry collection
-        - DORA rate metrics
+        - package publication
+        - implicit software license selection
+        - mandatory second human reviewer
+        - branch protection claims without an available repository-settings mutation capability
+        - dashboard database or orchestration scope
+    acceptance:
+      - governance contract tests fail before cross-platform CI and SECURITY.md exist
+      - the same test suite passes on Ubuntu Windows and macOS
+      - a Windows-only failure is diagnosed and fixed rather than excluded from CI
+      - private vulnerability reporting and public disclosure boundaries are documented
+      - remaining provider adaptive-context doctor-eval and distribution work is visible in GitHub issues
+    artifacts:
+      spec: docs/superpowers/specs/2026-08-25-devland-trust-hardening-design.md
+      plan: docs/superpowers/plans/2026-08-25-devland-iteration-11-governance.md
+      evidence:
+        - GitHub Actions run 32775881396 verified RED before the cross-platform and security governance contract existed
+        - GitHub Actions run 32775940246 exposed a real Windows CRLF frontmatter portability defect while Ubuntu and macOS passed
+        - GitHub Actions run 32776377229 verified GREEN on Ubuntu Windows and macOS after newline-agnostic parsing was implemented
+        - GitHub issues 17 through 21 record the remaining provider evidence adaptive context doctor evaluation and public distribution work
+    branch: chore/devland-v1-iteration-11-governance
+    pull_request: PR-16
+  - id: devland-v1-iteration-10-event-integrity
+    kind: feature
+    status: done
+    goal: Make normalized engineering evidence semantically usable and prevent non-production deployments from closing production cycle metrics.
+    scope:
+      allowed:
+        - event-type-specific linkage requirements
+        - real timestamp validation
+        - validation of persisted NDJSON events before metrics consumption
+        - explicit canonical production environment names
+        - production-aware idea-to-production timing
+        - environment-aware deployment and recovery correlation
+      excluded:
+        - provider adapter
+        - durable telemetry service
         - analytics database or dashboard
-        - agent runtime or orchestration
+        - hard-coded production environment naming
     acceptance:
-      - flow contract tests fail before the command and metrics engine exist
-      - complete correlated event pairs produce deterministic duration samples
-      - missing linkage is skipped instead of inferred
-      - missing event log produces an empty report
-      - idea-to-production remains an end-to-end cycle metric rather than a bottleneck stage
-      - actionable bottleneck selects the largest average stage duration
-      - full Devland test suite passes after implementation
+      - event and flow integrity tests fail before the semantic requirements are implemented
+      - deployment success without required work deployment and environment linkage is rejected
+      - impossible timestamps are rejected even when their string shape matches the schema pattern
+      - staging deployment success does not close idea-to-production
+      - identical deployment IDs in different environments cannot cross-pair
+      - the final full test suite passes
     artifacts:
-      spec: docs/superpowers/specs/2026-08-25-devland-feedback-loop-design.md
-      plan: docs/superpowers/plans/2026-08-25-devland-iteration-6-flow-metrics.md
+      spec: docs/superpowers/specs/2026-08-25-devland-trust-hardening-design.md
+      plan: docs/superpowers/plans/2026-08-25-devland-iteration-10-event-integrity.md
       evidence:
-        - GitHub Actions run 32771733628 verified RED before devland flow existed
-        - GitHub Actions run 32771945766 verified RED for corrected actionable bottleneck semantics
-        - GitHub Actions run 32772160988 verified GREEN on the final PR head
-    branch: feat/devland-v1-iteration-6-flow-metrics
-    pull_request: PR-10
-  - id: devland-v1-iteration-5-context-relevance
+        - GitHub Actions run 32775496147 verified RED for event and production-flow integrity contracts
+        - GitHub Actions run 32775652195 verified GREEN after the event schema timestamp and production-aware metric implementation
+        - GitHub Actions run 32775724318 verified GREEN on the final documented PR head
+    branch: feat/devland-v1-iteration-10-event-integrity
+    pull_request: PR-15
+  - id: devland-v1-iteration-9-contract-versioning
     kind: feature
     status: done
-    goal: Resolve only workflow-declared baseline core policies instead of loading the entire core policy directory into every runtime context.
+    goal: Separate Devland behavioral compatibility from document schema compatibility so repositories cannot silently receive incompatible engineering semantics.
     scope:
       allowed:
-        - workflow policy dependency frontmatter
-        - exact deterministic core policy resolution
-        - explicit missing-policy failures
-        - preservation of independent profile resolution
-        - executable context relevance tests
+        - required devland.contract canonical project field
+        - runtime supported-contract validation
+        - package version 0.1.0
+        - Node engine contract >=22
+        - repository-wide canonical fixture migration to contract 1
       excluded:
-        - semantic search
-        - prompt classification
-        - change-risk classification
-        - provider-specific context logic
-        - new dependencies
+        - schema v1 migration
+        - package publication
+        - migration CLI
+        - registry or release automation
     acceptance:
-      - relevance contract tests fail while develop-change still receives unrelated policies
-      - every top-level workflow declares baseline core policy dependencies
-      - context resolves only declared baseline policies
-      - missing declared policies cause explicit resolution failure
-      - profile resolution remains project-driven
-      - full Devland test suite passes after implementation
+      - compatibility tests fail before explicit contract metadata exists
+      - missing behavioral contract is invalid
+      - unsupported behavioral contract fails explicitly
+      - current repository templates evals and fixtures pin contract 1
+      - package and lockfile agree on version and Node engine
+      - the final full test suite passes
     artifacts:
-      spec: docs/superpowers/specs/2026-08-25-devland-feedback-loop-design.md
-      plan: docs/superpowers/plans/2026-08-25-devland-iteration-5-context-relevance.md
+      spec: docs/superpowers/specs/2026-08-25-devland-trust-hardening-design.md
+      plan: docs/superpowers/plans/2026-08-25-devland-iteration-9-contract-versioning.md
       evidence:
-        - GitHub Actions run 32771458169 verified RED against the previous all-policy resolver
-        - GitHub Actions run 32771600736 verified GREEN after deterministic workflow policy resolution
-    branch: feat/devland-v1-iteration-5-context-relevance
-    pull_request: PR-9
-  - id: devland-v1-iteration-4-doctor
+        - GitHub Actions run 32774705503 verified RED before behavioral contract and package compatibility metadata existed
+        - GitHub Actions run 32775141183 verified GREEN after runtime schema package and all canonical fixtures were migrated
+    branch: feat/devland-v1-iteration-9-contract-versioning
+    pull_request: PR-14
+  - id: devland-v1-iteration-8-doctor-confidence
     kind: feature
     status: done
-    goal: Add deterministic read-only repository drift diagnosis and dogfood it against Devland's own stale canonical context.
+    goal: Prevent executable doctor from making global health claims beyond the diagnostic evidence it actually evaluates.
     scope:
       allowed:
-        - devland doctor CLI command
-        - deterministic JavaScript and Node stack evidence
-        - missing architecture reference detection
-        - structured read-only doctor findings
-        - self-host canonical stack/runtime reconciliation
-        - README executable-state reconciliation
-        - executable doctor tests
+        - explicit global doctor status
+        - per-category diagnostic coverage
+        - all nine doctor categories represented in reports
+        - present absent inaccessible repository probing
+        - uncertainty propagation for unreadable evidence
       excluded:
-        - automatic canonical rewrites
-        - LLM-based repository inference
-        - provider-specific repository logic
-        - database or dashboard
-        - agent runtime or orchestration
+        - implementation of all nine diagnostic categories
+        - automatic canonical rewrite
+        - LLM repository inference
+        - provider-specific diagnostics
     acceptance:
-      - doctor contract tests fail before devland doctor exists
-      - doctor reports deterministic stack/runtime drift from repository evidence
-      - doctor reports missing referenced architecture documents
-      - doctor never rewrites canonical state
-      - Devland self-hosted project model records JavaScript and Node after evidence is established
-      - full Devland test suite passes after reconciliation
+      - doctor confidence tests fail while no-finding output still implies global health
+      - unsupported diagnostic categories are reported as not_evaluated
+      - missing files are distinguished from inaccessible evidence
+      - findings remain actionable and evidence-backed
+      - the final full test suite passes
     artifacts:
-      spec: docs/superpowers/specs/2026-08-25-devland-feedback-loop-design.md
-      plan: docs/superpowers/plans/2026-08-25-devland-iteration-4-doctor.md
+      spec: docs/superpowers/specs/2026-08-25-devland-trust-hardening-design.md
+      plan: docs/superpowers/plans/2026-08-25-devland-iteration-8-doctor-confidence.md
       evidence:
-        - GitHub Actions run 32771106824 verified RED with 33 tests passing and 2 expected doctor failures because the command did not exist
-        - GitHub Actions run 32771209680 verified GREEN after executable doctor implementation
-        - GitHub Actions run 32771297276 verified GREEN after self-host canonical and README reconciliation
-    branch: feat/devland-v1-iteration-4-doctor
-    pull_request: PR-8
-  - id: devland-v1-iteration-3-events
+        - GitHub Actions run 32774471699 verified RED for doctor coverage and probe semantics
+        - GitHub Actions run 32774557279 verified GREEN after coverage-aware doctor reporting and tri-state probing
+    branch: feat/devland-v1-iteration-8-doctor-confidence
+    pull_request: PR-13
+  - id: devland-v1-iteration-7-canonical-invariants
     kind: feature
     status: done
-    goal: Establish a normalized provider-agnostic engineering event model and deterministic local ingestion without turning canonical state into telemetry storage.
+    goal: Enforce canonical domain invariants beyond JSON shape and prevent explicitly requested profiles from disappearing silently.
     scope:
       allowed:
-        - devland.event/v1 schema
-        - normalized event vocabulary from work acceptance through outcome observation
-        - provider-neutral linkage fields for work change commit deployment and environment
-        - devland event append command
-        - append-only local NDJSON runtime event log
-        - idempotent duplicate event replay by stable event id
-        - local runtime telemetry excluded from Git tracking
-        - executable event schema and ingestion tests
+        - semantic validation after AJV structural validation
+        - globally unique work IDs across state buckets
+        - bucket and status consistency
+        - required resolution of explicit project profiles
+        - optional inferred profile candidates
       excluded:
-        - DORA or flow metric calculation
-        - provider adapters
-        - automatic GitHub CI deployment or observability collection
-        - analytics database or dashboard
-        - canonical state telemetry storage
-        - agent runtime or orchestration
+        - canonical schema format migration
+        - automatic state rewrites
+        - mandatory inferred profiles
+        - new dependency
     acceptance:
-      - event contract tests fail before schema and ingestion implementation exist
-      - schema defines the v1 normalized event vocabulary and stable identity timestamp source and linkage fields
-      - valid normalized events append to .devland/runtime/events.ndjson outside canonical state
-      - identical replay of the same event id and payload is idempotent
-      - invalid normalized events fail without writing evidence
-      - runtime telemetry is ignored by Git
-      - full Devland test suite passes after implementation
+      - semantic invariant tests fail before implementation
+      - duplicate work IDs across buckets are invalid
+      - work status contradictory to its bucket is invalid
+      - missing explicit profile IDs cause context resolution failure
+      - inferred unavailable profiles remain optional
+      - the final full test suite passes
     artifacts:
-      spec: docs/superpowers/specs/2026-08-22-devland-v1-flow-contract.md
-      plan: null
+      spec: docs/superpowers/specs/2026-08-25-devland-trust-hardening-design.md
+      plan: docs/superpowers/plans/2026-08-25-devland-iteration-7-canonical-invariants.md
       evidence:
-        - GitHub Actions run 32555705621 verified RED with 29 existing tests passing and 4 expected event contract failures because schema and event append did not exist
-        - GitHub Actions run 32555761656 verified GREEN after normalized event schema idempotent local ingestion CLI command and runtime ignore rule were added
-    branch: feat/devland-v1-iteration-3-events
-    pull_request: PR-7
-  - id: devland-v1-package-root-resolution
-    kind: bugfix
-    status: done
-    goal: Make the executable Devland runtime resolve reusable schemas policies profiles and workflows from the installed tool while reading canonical project state from the target repository.
-    scope:
-      allowed:
-        - separate target project root from installed Devland core root
-        - minimal target repository regression coverage
-        - preserve existing validate and context command behavior
-      excluded:
-        - engineering event model
-        - metrics engine
-        - provider adapters
-        - package distribution or registry work
-        - repository mutation commands
-    acceptance:
-      - regression test fails before the fix because a minimal target repository does not contain Devland schemas
-      - validate reads canonical project and state from the target working directory
-      - schemas policies profiles and workflows resolve from the installed Devland package root
-      - existing self-host CLI behavior remains green
-      - full Devland test suite passes after the fix
-    artifacts:
-      spec: docs/superpowers/specs/2026-08-22-devland-v1-flow-contract.md
-      plan: null
-      evidence:
-        - GitHub Actions run 32555571555 verified RED with 28 tests passing and one expected failure because the target repo lacked schemas/project.schema.json
-        - GitHub Actions run 32555605491 verified GREEN after target and installed Devland roots were separated
-    branch: fix/devland-v1-package-root
-    pull_request: PR-6
-  - id: devland-v1-iteration-2-executable
-    kind: feature
-    status: done
-    goal: Add the smallest deterministic Devland executable for canonical validation and resolved workflow context without introducing provider or analytics scope.
-    scope:
-      allowed:
-        - executable Devland CLI entrypoint
-        - canonical project and state schema validation
-        - deterministic develop workflow context resolution
-        - core policy loading
-        - applicable project profile resolution
-        - honest unknown-workflow failure
-        - package bin metadata
-        - executable CLI contract tests
-      excluded:
-        - engineering event model
-        - flow or DORA metrics engine
-        - provider adapters
-        - repository mutation commands
-        - CI or deployment execution
-        - production telemetry collection
-        - dashboard or database
-        - agent runtime or multi-agent orchestration
-    acceptance:
-      - executable contract tests fail before the CLI exists and the failure represents the missing executable
-      - validate checks canonical project and state using the existing schemas
-      - context returns canonical project state core policies applicable profiles and the requested workflow as deterministic JSON
-      - unknown workflows fail without claiming successful context resolution
-      - existing dependency versions remain unchanged
-      - full Devland test suite passes after implementation and packaging
-    artifacts:
-      spec: docs/superpowers/specs/2026-08-22-devland-v1-flow-contract.md
-      plan: null
-      evidence:
-        - GitHub Actions run 32529514675 verified RED with 25 existing tests passing and 3 expected CLI contract failures because bin/devland.mjs did not exist
-        - GitHub Actions run 32529598697 verified GREEN after the deterministic runtime and CLI entrypoint were added
-    branch: feat/devland-v1-iteration-2-executable
-    pull_request: PR-5
-  - id: devland-v1-iteration-1-rapid-workflow
-    kind: feature
-    status: done
-    goal: Make develop-change execute the Devland v1 rapid XP feedback loop with small valuable batches, repeated TDD, focused feedback, and prompt integration.
-    scope:
-      allowed:
-        - develop-change rapid XP workflow semantics
-        - smallest valuable independently verifiable slice guidance
-        - repeated RED GREEN REFACTOR inner loop
-        - focused feedback and broader pre-integration verification
-        - short-lived branch and prompt integration defaults
-        - conditional production and outcome observation when evidence is available
-        - executable workflow contract tests
-      excluded:
-        - project or state schema changes
-        - Devland CLI
-        - engineering event model
-        - metrics engine
-        - provider adapters
-        - production telemetry collection
-        - dashboard or database
-        - agent runtime or multi-agent orchestration
-    acceptance:
-      - workflow contract tests fail against the v0 develop-change semantics before implementation
-      - develop-change selects the smallest valuable slice with observable acceptance
-      - behavior work repeats RED GREEN REFACTOR with fastest relevant focused verification
-      - specs and plans remain conditional instead of default ceremony
-      - canonical state remains concise instead of recording TDD micro-steps
-      - engineering policy prefers smallest valuable independently verifiable small batches
-      - Git policy favors short-lived work and prompt integration while preserving one logical task and one normal PR
-      - branch ancestry reconciliation and capability honesty remain enforced
-      - full Devland test suite passes after the workflow change
-    artifacts:
-      spec: docs/superpowers/specs/2026-08-22-devland-v1-flow-contract.md
-      plan: null
-      evidence:
-        - GitHub Actions run 32529062845 verified RED with 21 existing tests passing and 4 expected rapid-workflow contract failures
-        - GitHub Actions run 32529141761 verified GREEN after develop-change engineering policy and Git policy were updated
-    branch: feat/devland-v1-iteration-1-rapid-workflow
-    pull_request: PR-4
-  - id: devland-v1-iteration-0-flow-contract
-    kind: design
-    status: done
-    goal: Define the tested Devland v1 contract for rapid XP delivery, small batches, production feedback, and measurable value without introducing executable platform scope yet.
-    scope:
-      allowed:
-        - v1 rapid delivery semantic contract
-        - smallest valuable slice and repeated TDD inner-loop semantics
-        - continuous integration production observation and learning outer-loop semantics
-        - delivery flow stability outcome and guardrail metric definitions
-        - provider-adapter and canonical-state boundaries
-        - executable repository contract tests for the v1 design
-      excluded:
-        - develop-change workflow implementation changes
-        - project or state schema changes
-        - Devland CLI
-        - metrics engine
-        - provider adapters
-        - production telemetry collection
-        - web dashboard or database
-        - agent runtime or multi-agent orchestration
-    acceptance:
-      - v1 contract tests fail before the specification exists and the failure represents the missing contract
-      - the contract defines smallest valuable slices and repeated RED GREEN REFACTOR development
-      - the contract connects continuous integration to production observation and learning without requiring heavyweight artifacts
-      - delivery speed stability end-to-end flow and product value are measured as distinct concerns
-      - current DORA delivery metrics plus idea-to-production cycle time outcome metrics and guardrail metrics are explicitly defined
-      - provider-specific evidence remains behind adapters and canonical state remains a concise work index
-      - full Devland test suite passes after the contract is implemented
-    artifacts:
-      spec: docs/superpowers/specs/2026-08-22-devland-v1-flow-contract.md
-      plan: null
-      evidence:
-        - GitHub Actions run 32528435703 verified RED with 18 existing tests passing and 3 expected v1 contract failures because the specification did not yet exist
-        - GitHub Actions run 32528522386 verified GREEN after the v1 contract specification was added
-    branch: feat/devland-v1-iteration-0-contract
-    pull_request: PR-3
-  - id: prebootstrap-active-branch-reconciliation
-    kind: bugfix
-    status: done
-    goal: Prevent canonical Devland writes from conflicting with active work that began before Devland context was introduced on the current base.
-    scope:
-      allowed:
-        - bootstrap workflow branch ancestry guard
-        - develop workflow branch ancestry guard
-        - capability-limited reconciliation stop condition
-        - ClipLingo doctor regression scenario
-      excluded:
-        - automatic merge conflict resolution
-        - new VCS capability vocabulary
-        - repository-specific migration code
-    acceptance:
-      - regression contract fails before the workflow fix
-      - bootstrap checks branch ancestry before canonical writes when evidence is available
-      - develop-change reconciles current base context before canonical state mutation when active work predates Devland bootstrap
-      - workflows stop rather than claim a safe mutation when reconciliation cannot be performed or verified
-      - the real ClipLingo migration case is retained as a stale-work-state doctor seed
-      - full Devland test suite passes after the fix
-    artifacts:
-      spec: null
-      plan: null
-      evidence:
-        - GitHub Actions run 31712922558 reproduced the missing ancestry guard with 17 passing tests and one expected regression failure
-        - GitHub Actions run 31713431821 reproduced the missing doctor scenario while the workflow regression was already green
-        - GitHub Actions run 31714191155 passed the full suite after workflow and eval cleanup
-    branch: fix/prebootstrap-active-branch
-    pull_request: PR-2
-  - id: devland-v0
-    kind: feature
-    status: done
-    goal: Establish the minimal tested Devland v0 semantic core and prove it against representative project contexts.
-    scope:
-      allowed:
-        - canonical project and work schemas
-        - reusable core policies and evidence-driven profiles
-        - capability-aware bootstrap develop and doctor workflows
-        - agent adapter contracts
-        - structural and semantic evaluation fixtures
-        - Devland self-host documentation and repository verification
-      excluded:
-        - Devland CLI
-        - backend or user interface
-        - automated repository scanner
-        - policy registry or lockfile
-        - custom MCP or ChatGPT App
-        - multi-agent orchestration
-    acceptance:
-      - canonical project and state schemas validate representative fixtures
-      - work items support projects with and without iteration grouping
-      - reusable policy and profile layers do not absorb project-specific architecture
-      - exactly three capability-aware v0 workflows remain vendor-neutral
-      - adapters route to canonical context rather than duplicate project truth
-      - six initial eval cases and three seeded doctor scenarios pass repository contract tests
-      - no app backend database CLI or custom repository connector is introduced
-    artifacts:
-      spec: docs/superpowers/specs/2026-08-13-devland-v0-design.md
-      plan: docs/superpowers/plans/2026-08-13-devland-v0-implementation.md
-      evidence:
-        - GitHub Actions run 31686456647 verified Tasks 1-8 contracts on the feature branch
-        - GitHub Actions run 31686692410 verified the full self-host candidate before PR integration
-        - GitHub Actions PR run 31686921104 verified PR-1 candidate head 76affc24bc35e67cbece3f06b6797f17e5a9a846
-    branch: feat/devland-v0
-    pull_request: PR-1
-open_decisions: []
+        - GitHub Actions run 32774243928 verified RED for canonical semantic invariants
+        - GitHub Actions run 32774333741 verified GREEN after semantic validation and explicit profile resolution
+    branch: feat/devland-v1-iteration-7-canonical-invariants
+    pull_request: PR-12
+open_decisions:
+  - Choose an explicit software license before public package distribution.

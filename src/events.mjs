@@ -19,7 +19,20 @@ function formatValidationErrors(errors = []) {
     .join('; ');
 }
 
-async function readExistingEvents(logPath) {
+function assertRealTimestamp(event) {
+  if (!Number.isFinite(Date.parse(event.occurred_at))) {
+    throw new Error(`Invalid engineering event timestamp: ${event.occurred_at}`);
+  }
+}
+
+function validateEventWith(event, validate) {
+  if (!validate(event)) {
+    throw new Error(`Invalid engineering event: ${formatValidationErrors(validate.errors)}`);
+  }
+  assertRealTimestamp(event);
+}
+
+async function readExistingEvents(logPath, validate) {
   let text;
   try {
     text = await readFile(logPath, 'utf8');
@@ -31,17 +44,25 @@ async function readExistingEvents(logPath) {
   const events = [];
   for (const [index, line] of text.split('\n').entries()) {
     if (!line.trim()) continue;
+    let event;
     try {
-      events.push(JSON.parse(line));
+      event = JSON.parse(line);
     } catch {
-      throw new Error(`Invalid engineering event log at line ${index + 1}`);
+      throw new Error(`Invalid engineering event log at line ${index + 1}: invalid JSON`);
     }
+    try {
+      validateEventWith(event, validate);
+    } catch (error) {
+      throw new Error(`Invalid engineering event log at line ${index + 1}: ${error.message}`);
+    }
+    events.push(event);
   }
   return events;
 }
 
 export async function readEngineeringEvents(projectRoot = process.cwd()) {
-  return readExistingEvents(path.join(projectRoot, EVENT_LOG_PATH));
+  const validate = await loadValidator();
+  return readExistingEvents(path.join(projectRoot, EVENT_LOG_PATH), validate);
 }
 
 export async function appendEngineeringEvent(event, projectRoot = process.cwd()) {
@@ -51,12 +72,10 @@ export async function appendEngineeringEvent(event, projectRoot = process.cwd())
   }
 
   const validate = await loadValidator();
-  if (!validate(event)) {
-    throw new Error(`Invalid engineering event: ${formatValidationErrors(validate.errors)}`);
-  }
+  validateEventWith(event, validate);
 
   const logPath = path.join(projectRoot, EVENT_LOG_PATH);
-  const existingEvents = await readEngineeringEvents(projectRoot);
+  const existingEvents = await readExistingEvents(logPath, validate);
   const existing = existingEvents.find((candidate) => candidate.id === event.id);
 
   if (existing) {

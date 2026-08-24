@@ -109,6 +109,9 @@
       "properties": {
         "model": {
           "type": ["string", "null"]
+        },
+        "production_environments": {
+          "$ref": "#/$defs/uniqueStrings"
         }
       }
     },

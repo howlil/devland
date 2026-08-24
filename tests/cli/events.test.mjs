@@ -77,3 +77,35 @@ test('event append rejects invalid normalized evidence without writing the runti
     assert.match(result.stderr, /invalid engineering event/i);
   });
 });
+
+test('event append rejects deployment success without production-usable linkage', async () => {
+  await withTargetRepo(async (root) => {
+    const invalid = {
+      schema: 'devland.event/v1',
+      id: 'evt-deploy-success-missing-linkage',
+      type: 'deployment.succeeded',
+      occurred_at: '2026-08-25T01:00:00Z',
+      source: 'test',
+      deployment_id: 'deploy-1',
+    };
+    const result = run(['event', 'append', JSON.stringify(invalid)], root);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /invalid engineering event/i);
+    assert.match(result.stderr, /environment|work_id|required/i);
+  });
+});
+
+test('event append rejects timestamps that match the shape but are not real instants', async () => {
+  await withTargetRepo(async (root) => {
+    const invalid = {
+      ...event,
+      id: 'evt-impossible-time',
+      occurred_at: '2026-99-99T25:61:61Z',
+    };
+    const result = run(['event', 'append', JSON.stringify(invalid)], root);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /timestamp|occurred_at|invalid engineering event/i);
+  });
+});

@@ -33,13 +33,14 @@ Devland is not an IDE, coding-agent runtime, repository provider, CI engine, dep
 ## Core concepts
 
 - **Project model** — stable or slowly changing project facts in `.devland/project.yaml`.
-- **Work state** — concise current/recent work information in `.devland/state.yaml`.
+- **Behavioral contract** — `devland.contract` pins the Devland engineering semantics expected by a target repository independently from YAML schema versions.
+- **Work state** — concise current/recent work information in `.devland/state.yaml`; semantic validation rejects duplicate work IDs and bucket/status contradictions.
 - **Core policies** — reusable engineering rules for scope, verification, Git hygiene, dependencies, security, testing, and documentation.
-- **Profiles** — conditional guidance activated by project type, quality concern, stack, or delivery model.
+- **Profiles** — conditional guidance activated by project type, quality concern, stack, or delivery model. Explicit profile IDs must resolve; inferred candidates remain optional.
 - **Workflows** — vendor-neutral procedures that declare semantic capabilities instead of provider APIs.
 - **Adapters** — projections for a target runtime or instruction format; they are never a second source of project truth.
-- **Engineering events** — normalized provider-agnostic evidence stored locally outside canonical state.
-- **Flow metrics** — deterministic timing derived from correlated engineering events.
+- **Engineering events** — normalized provider-agnostic evidence stored locally outside canonical state. Event types require the linkage necessary to interpret them.
+- **Flow metrics** — deterministic timing derived from correlated engineering events and explicit production-environment semantics.
 
 ## Minimal target repository
 
@@ -49,6 +50,22 @@ repo/
 └── .devland/
     ├── project.yaml
     └── state.yaml
+```
+
+A project model declares its Devland behavioral contract explicitly:
+
+```yaml
+devland:
+  contract: "1"
+```
+
+When production cycle metrics are desired, production environments are also explicit rather than inferred from names:
+
+```yaml
+delivery:
+  model: container-image
+  production_environments:
+    - production
 ```
 
 Specs, plans, architecture documents, decisions, and evidence artifacts are conditional. They should exist only when they carry durable value that cannot be represented by the minimal canonical state.
@@ -65,11 +82,13 @@ devland event append '<json>'
 devland flow
 ```
 
-- `validate` checks canonical project and work state against their schemas.
-- `doctor` compares canonical state with deterministic repository evidence and reports drift without rewriting canonical truth.
+- `validate` checks canonical project/work state against their schemas and deterministic domain invariants, including the supported Devland behavioral contract.
+- `doctor` compares canonical state with deterministic repository evidence without rewriting canonical truth. Its report exposes per-category coverage and returns `partial` when known diagnostic categories have not been evaluated instead of claiming global health.
 - `context` resolves canonical state, only the baseline core policies declared by the requested workflow, and applicable profiles for an AI runtime.
-- `event append` validates and idempotently stores normalized engineering evidence in `.devland/runtime/events.ndjson`.
-- `flow` calculates idea-to-production plus actionable stage timing for review, CI feedback, deployment, and failed-deployment recovery; the reported bottleneck is the actionable stage with the largest average duration from complete correlated event pairs.
+- `event append` validates event shape, type-specific linkage, real timestamps, and stable event identity before writing normalized evidence to `.devland/runtime/events.ndjson`.
+- `flow` calculates idea-to-production plus actionable stage timing for review, CI feedback, deployment, and failed-deployment recovery. Idea-to-production closes only on a deployment success whose environment is declared production; deployment/recovery pairing includes environment as part of correlation.
+
+`.devland/runtime/events.ndjson` is a local evidence spool, not an authoritative telemetry service. Provider-backed durable evidence collection remains outside the current executable scope.
 
 The executable does not own repository authentication or execute provider-specific repository, CI, deployment, or production actions.
 
@@ -96,11 +115,11 @@ valuable intent
     -> learn
 ```
 
-Flow metrics only use evidence with sufficient correlation IDs. Missing linkage is skipped rather than inferred. Provider adapters, automated telemetry collection, dashboards, databases, and autonomous agent orchestration remain outside the current executable scope.
+Flow metrics use only complete, semantically valid evidence with sufficient correlation. Missing linkage, unknown production environments, or corrupted event evidence are not converted into invented metrics. Provider adapters, automated telemetry collection, dashboards, databases, and autonomous agent orchestration remain outside the current executable scope.
 
 ## Development and verification
 
-Repository contract checks use:
+Devland currently targets Node.js 22 or newer. Repository contract checks use:
 
 ```bash
 npm ci

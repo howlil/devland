@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { doctorProject } from '../src/doctor.mjs';
 import { appendEngineeringEvent } from '../src/events.mjs';
 import { resolveContext, validateCanonical } from '../src/runtime.mjs';
 
@@ -19,6 +20,11 @@ async function main() {
     const result = await validateCanonical();
     print({ valid: result.valid, validated: result.validated, errors: result.errors });
     if (!result.valid) process.exitCode = 1;
+    return;
+  }
+
+  if (command === 'doctor') {
+    print(await doctorProject());
     return;
   }
 
@@ -49,7 +55,7 @@ async function main() {
     return;
   }
 
-  fail('Usage: devland <validate|context <workflow>|event append <json>>');
+  fail('Usage: devland <validate|doctor|context <workflow>|event append <json>>');
 }
 
 main().catch((error) => {

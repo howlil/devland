@@ -36,7 +36,8 @@ Devland is not an IDE, coding-agent runtime, repository provider, CI engine, dep
 - **Behavioral contract** — `devland.contract` pins the Devland engineering semantics expected by a target repository independently from YAML schema versions.
 - **Work state** — concise current/recent work information in `.devland/state.yaml`; semantic validation rejects duplicate work IDs and bucket/status contradictions.
 - **Core policies** — reusable engineering rules for scope, verification, Git hygiene, dependencies, security, testing, and documentation.
-- **Profiles** — conditional guidance activated by project type, quality concern, stack, or delivery model. Explicit profile IDs must resolve; inferred candidates remain optional.
+- **Profiles** — conditional guidance activated by project type, quality concern, stack, delivery model, or material per-change risk. Explicit profile IDs must resolve; inferred candidates remain optional.
+- **Change context** — transient deterministic risk signals select a proportional execution lane without turning one risky change into permanent project-wide ceremony.
 - **Workflows** — vendor-neutral procedures that declare semantic capabilities instead of provider APIs.
 - **Adapters** — projections for a target runtime or instruction format; they are never a second source of project truth.
 - **Engineering events** — normalized provider-agnostic evidence stored locally outside canonical state. Event types require the linkage necessary to interpret them.
@@ -78,7 +79,7 @@ Devland includes a small deterministic Node.js CLI:
 ```bash
 devland validate
 devland doctor
-devland context <workflow>
+devland context <workflow> [change-json]
 devland event append '<json>'
 devland ingest github '<json>'
 devland flow
@@ -86,10 +87,26 @@ devland flow
 
 - `validate` checks canonical project/work state against their schemas and deterministic domain invariants, including the supported Devland behavioral contract.
 - `doctor` compares canonical state with deterministic repository evidence without rewriting canonical truth. Its report exposes per-category coverage and returns `partial` when known diagnostic categories have not been evaluated instead of claiming global health.
-- `context` resolves canonical state, only the baseline core policies declared by the requested workflow, and applicable profiles for an AI runtime.
+- `context` resolves canonical state, workflow baseline policies, applicable project profiles, and optional transient change-risk expansion for an AI runtime.
 - `event append` validates event shape, type-specific linkage, real timestamps, and stable event identity before writing normalized evidence to `.devland/runtime/events.ndjson`.
 - `ingest github` accepts already-obtained GitHub commit, pull-request, workflow-run, and deployment evidence; converts it to stable `devland.event/v1` events; and merges it idempotently into the local spool under a repository-local ingestion lock.
 - `flow` calculates idea-to-production plus actionable stage timing for review, CI feedback, deployment, and failed-deployment recovery. Idea-to-production closes only on a deployment success whose environment is declared production; deployment/recovery pairing includes environment as part of correlation.
+
+### Proportional change context
+
+Per-change risk is passed as transient input rather than persisted as a project fact:
+
+```bash
+devland context develop-change '{"signals":["security-boundary"]}'
+```
+
+Current deterministic lanes are:
+
+- **rapid** — localized/reversible work or no material signal;
+- **guided** — multi-module, schema-change, or new-api-flow work;
+- **deliberate** — security-boundary, irreversible-migration, data-loss-risk, concurrency-semantics, compatibility-break, or large-blast-radius work.
+
+The highest-risk declared signal wins. Unknown signals fail explicitly rather than silently reducing ceremony. A security-boundary signal also activates the existing `qualities.security-sensitive` guidance even when the entire project is not permanently marked security-sensitive. Change descriptors are never written into canonical project state by context resolution.
 
 A runtime or provider integration remains responsible for reading GitHub. Devland does not store GitHub tokens or make authenticated GitHub API calls. The same provider history can be replayed into a fresh checkout because normalized event IDs are derived deterministically from repository and provider identities.
 

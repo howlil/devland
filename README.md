@@ -78,6 +78,8 @@ Specs, plans, architecture documents, decisions, and evidence artifacts are cond
 Devland includes a small deterministic Node.js CLI:
 
 ```bash
+devland init <project-name>
+devland migrate
 devland validate
 devland doctor
 devland context <workflow> [change-json]
@@ -87,6 +89,8 @@ devland ingest github '<json>'
 devland flow
 ```
 
+- `init` creates minimal contract 1 project/work state and refuses to overwrite a repository when either canonical Devland file already exists.
+- `migrate` upgrades the supported legacy `devland.project/v0` form without a behavioral contract to contract 1, is idempotent for contract 1, and refuses unsupported future contracts rather than downgrading them.
 - `validate` checks canonical project/work state against their schemas and deterministic domain invariants, including the supported Devland behavioral contract.
 - `doctor` compares canonical state with deterministic repository evidence without rewriting canonical truth. Its report exposes per-category coverage and returns `partial` when known diagnostic categories have not been evaluated instead of claiming global health.
 - `context` resolves canonical state, workflow baseline policies, applicable project profiles, and optional transient change-risk expansion for an AI runtime.
@@ -94,6 +98,24 @@ devland flow
 - `event append` validates event shape, type-specific linkage, real timestamps, and stable event identity before writing normalized evidence to `.devland/runtime/events.ndjson`.
 - `ingest github` accepts already-obtained GitHub commit, pull-request, workflow-run, and deployment evidence; converts it to stable `devland.event/v1` events; and merges it idempotently into the local spool under a repository-local ingestion lock.
 - `flow` calculates idea-to-production plus actionable stage timing for review, CI feedback, deployment, and failed-deployment recovery. Idea-to-production closes only on a deployment success whose environment is declared production; deployment/recovery pairing includes environment as part of correlation.
+
+### Initialization and compatibility migration
+
+Initialize a repository explicitly rather than copying templates by hand:
+
+```bash
+devland init <project-name>
+```
+
+Initialization writes only `.devland/project.yaml` and `.devland/state.yaml`, keeps unknown project facts unknown, and refuses to overwrite existing canonical state.
+
+For a legacy `devland.project/v0` repository created before the behavioral contract field existed:
+
+```bash
+devland migrate
+```
+
+The current migration boundary is deliberately narrow: legacy v0 without `devland.contract` becomes contract 1. Running it again on contract 1 is a no-op after validation. Unknown or future contract values fail explicitly. Package versions, canonical schema identifiers, and `devland.contract` are separate compatibility dimensions; see `docs/release-policy.md` before changing any of them.
 
 ### Proportional change context
 

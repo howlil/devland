@@ -2,6 +2,7 @@
   "name": "devland",
   "version": "0.1.0",
   "private": true,
+  "description": "Agent-agnostic engineering context and feedback tooling for software developed with AI.",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -9,12 +10,25 @@
   "bin": {
     "devland": "./bin/devland.mjs"
   },
+  "files": [
+    "bin/",
+    "src/",
+    "core/",
+    "profiles/",
+    "schemas/",
+    "templates/",
+    "adapters/"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/howlil/devland.git"
+  },
   "scripts": {
     "devland": "node bin/devland.mjs",
     "test": "node --test",
     "check": "node --test"
   },
-  "devDependencies": {
+  "dependencies": {
     "ajv": "^8.0.0",
     "yaml": "^2.0.0"
   }

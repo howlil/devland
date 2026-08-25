@@ -1,26 +1,54 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 
 async function read(path) {
   return readFile(path, 'utf8');
 }
 
-test('package metadata is runtime-correct while distribution remains intentionally private', async () => {
+async function exists(path) {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+test('package metadata is OSS-ready while npm publication remains intentionally private', async () => {
   const pkg = JSON.parse(await read('package.json'));
 
   assert.equal(pkg.private, true);
+  assert.equal(pkg.license, 'MIT');
   assert.equal(pkg.engines?.node, '>=22');
   assert.equal(pkg.dependencies?.ajv !== undefined, true, 'ajv must be a runtime dependency');
   assert.equal(pkg.dependencies?.yaml !== undefined, true, 'yaml must be a runtime dependency');
   assert.equal(pkg.devDependencies?.ajv, undefined);
   assert.equal(pkg.devDependencies?.yaml, undefined);
-  assert.match(pkg.description ?? '', /engineering|context|feedback/i);
+  assert.match(pkg.description ?? '', /engineering|context|diagnostic/i);
   assert.equal(pkg.repository?.type, 'git');
   assert.equal(pkg.repository?.url, 'git+https://github.com/howlil/devland.git');
+  assert.equal(pkg.homepage, 'https://github.com/howlil/devland#readme');
+  assert.equal(pkg.bugs?.url, 'https://github.com/howlil/devland/issues');
+  assert.equal(Array.isArray(pkg.keywords), true);
   assert.equal(Array.isArray(pkg.files), true);
   for (const required of ['bin/', 'src/', 'core/', 'profiles/', 'schemas/', 'templates/', 'adapters/']) {
     assert.equal(pkg.files.includes(required), true, `package files missing ${required}`);
+  }
+});
+
+test('repository exposes the minimal OSS contribution surface', async () => {
+  for (const path of [
+    'LICENSE',
+    'CONTRIBUTING.md',
+    'CODE_OF_CONDUCT.md',
+    'SECURITY.md',
+    '.github/PULL_REQUEST_TEMPLATE.md',
+    '.github/ISSUE_TEMPLATE/bug_report.yml',
+    '.github/ISSUE_TEMPLATE/feature_request.yml',
+    '.github/ISSUE_TEMPLATE/config.yml',
+  ]) {
+    assert.equal(await exists(path), true, `missing OSS repository file: ${path}`);
   }
 });
 
@@ -33,14 +61,14 @@ test('README exposes deterministic initialization and migration commands', async
   assert.match(readme, /contract 1|contract `?1`?/i);
 });
 
-test('release policy separates package versions from behavioral contracts and keeps publishing gated', async () => {
+test('release policy separates source licensing, package publication, and behavioral compatibility', async () => {
   const policy = await read('docs/release-policy.md');
 
+  assert.match(policy, /MIT License/i);
   assert.match(policy, /devland\.contract/);
   assert.match(policy, /package version/i);
   assert.match(policy, /breaking/i);
   assert.match(policy, /migration/i);
   assert.match(policy, /private.*true|private: true/i);
-  assert.match(policy, /license/i);
   assert.match(policy, /do not publish|must not publish|publishing.*blocked/i);
 });

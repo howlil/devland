@@ -15,6 +15,33 @@ const DOCTOR_CATEGORIES = [
   'over-generated context with no current applicability',
 ];
 
+const UNEVALUATED_REQUIREMENTS = {
+  'project-model drift': {
+    reason: 'No deterministic project-fact detector currently compares broader canonical product/project facts with repository evidence.',
+    required_evidence: ['normalized repository facts beyond stack/runtime'],
+  },
+  'architecture-document drift': {
+    reason: 'Doctor currently checks referenced architecture-document presence, not semantic agreement between the document and observable architecture.',
+    required_evidence: ['architecture document semantics', 'normalized observable architecture facts'],
+  },
+  'stale work state': {
+    reason: 'Canonical work state cannot be declared stale without deterministic work-lifecycle evidence from VCS or a provider.',
+    required_evidence: ['VCS or provider work-lifecycle evidence'],
+  },
+  'adapter duplication/divergence': {
+    reason: 'Adapter divergence requires comparing rendered adapter projections against the same resolved canonical context.',
+    required_evidence: ['resolved canonical context', 'rendered adapter projections'],
+  },
+  'policy conflict': {
+    reason: 'Policy conflict requires deterministic policy-semantic comparison with applicable repository behavior or configuration.',
+    required_evidence: ['resolved policy semantics', 'observable repository behavior or configuration'],
+  },
+  'over-generated context with no current applicability': {
+    reason: 'Context over-generation requires evidence about which resolved context was projected for the current workflow/change.',
+    required_evidence: ['resolved workflow/change context', 'adapter projection applicability evidence'],
+  },
+};
+
 const STACK_FIELD_BY_FACT_KIND = new Map([
   ['language', 'languages'],
   ['runtime', 'runtimes'],
@@ -108,7 +135,18 @@ function detectVerificationEvidenceCheck(state) {
 }
 
 function notEvaluated(category) {
-  return { category, status: 'not_evaluated', findings: [], uncertainty: [] };
+  const requirement = UNEVALUATED_REQUIREMENTS[category] ?? {
+    reason: 'No deterministic evaluator is implemented for this doctor category.',
+    required_evidence: ['category-specific deterministic evidence'],
+  };
+  return {
+    category,
+    status: 'not_evaluated',
+    findings: [],
+    uncertainty: [],
+    reason: requirement.reason,
+    required_evidence: requirement.required_evidence,
+  };
 }
 
 function aggregateStatus(checks, findings) {

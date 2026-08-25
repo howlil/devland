@@ -36,6 +36,12 @@ function includeEvent(event, spec, productionEnvironments) {
   return true;
 }
 
+function hasObservedLifecycleEvidence(events, productionEnvironments) {
+  return events.some((event) => METRIC_SPECS.some((spec) =>
+    includeEvent(event, spec, productionEnvironments) && correlationKey(event, spec.keys) !== null
+  ));
+}
+
 function pairDurations(events, spec, productionEnvironments) {
   const groups = new Map();
 
@@ -88,7 +94,8 @@ function aggregate(durations) {
   };
 }
 
-function evidenceStatus(incomplete) {
+function evidenceStatus(incomplete, observedLifecycleEvidence) {
+  if (!observedLifecycleEvidence) return 'empty';
   const hasIncompleteLifecycle = Object.values(incomplete).some(
     (value) => value.unmatched_starts > 0 || value.unmatched_ends > 0,
   );
@@ -120,7 +127,7 @@ export function calculateFlowMetrics(events, { productionEnvironments = [] } = {
     metrics,
     bottleneck,
     incomplete,
-    evidence_status: evidenceStatus(incomplete),
+    evidence_status: evidenceStatus(incomplete, hasObservedLifecycleEvidence(events, production)),
   };
 }
 

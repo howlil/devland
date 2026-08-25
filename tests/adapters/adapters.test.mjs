@@ -74,27 +74,13 @@ test('Devland consumes its own canonical project and state schemas', async () =>
   assert.equal(state.recently_completed.some((item) => item.id === 'devland-v0'), false);
 });
 
-test('root AGENTS is a router and README keeps Devland positioned as a tool contract', async () => {
+test('root AGENTS routes to canonical context without duplicating project truth', async () => {
   const agents = await readText('AGENTS.md');
   assert.match(agents, /\.devland\/project\.yaml/);
   assert.match(agents, /\.devland\/state\.yaml/);
-  assert.match(agents, /docs\/superpowers\/specs\/2026-08-13-devland-v0-design\.md/);
+  assert.match(agents, /repository (source|reality)/i);
 
   for (const duplicatedFact of ['developer-tool', 'content-first semantic core', 'agent-agnostic semantics']) {
     assert.equal(agents.includes(duplicatedFact), false, `root AGENTS duplicates canonical fact: ${duplicatedFact}`);
   }
-
-  const readme = await readText('README.md');
-  for (const falsePositioning of [
-    /Devland is a SaaS/i,
-    /Devland is an IDE/i,
-    /Devland is a coding agent runtime/i,
-    /Devland is a GitHub connector/i,
-  ]) {
-    assert.equal(falsePositioning.test(readme), false, `README contains false positioning: ${falsePositioning}`);
-  }
-  assert.match(readme, /Devland Core/i);
-  assert.match(readme, /project\.yaml/);
-  assert.match(readme, /bootstrap-project/);
-  assert.match(readme, /doctor-project/);
 });

@@ -20,4 +20,11 @@ jobs:
           node-version: 22
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
-      - run: pnpm test
+      - name: Core test suite
+        run: pnpm test -- --test-name-pattern='^(?!.*packed Devland|.*installed package resolves|.*pnpm package contains)'
+      - name: Packed artifact contract
+        run: node --test tests/core/packed-artifact.test.mjs
+      - name: Installed artifact smoke
+        run: node --test tests/core/installed-artifact-smoke.test.mjs
+      - name: Installed executable resolution
+        run: node --test tests/core/installed-executable-resolution.test.mjs

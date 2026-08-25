@@ -84,6 +84,29 @@ async function detectReferenceCheck(projectRoot, project) {
   };
 }
 
+function detectVerificationEvidenceCheck(state) {
+  const findings = [];
+  for (const item of state.recently_completed ?? []) {
+    if (item.status !== 'done') continue;
+    const evidence = item.artifacts?.evidence ?? [];
+    if (evidence.length > 0) continue;
+    findings.push({
+      category: 'missing verification evidence for claimed-done work',
+      evidence: [],
+      canonical: item.id,
+      observed: ['status: done', 'artifacts.evidence: empty'],
+      recommendation: 'Attach fresh verification evidence to the completed work item or move it out of claimed-done state.',
+    });
+  }
+
+  return {
+    category: 'missing verification evidence for claimed-done work',
+    status: findings.length > 0 ? 'findings' : 'clean',
+    findings,
+    uncertainty: [],
+  };
+}
+
 function notEvaluated(category) {
   return { category, status: 'not_evaluated', findings: [], uncertainty: [] };
 }
@@ -103,8 +126,10 @@ export async function doctorProject(projectRoot = process.cwd()) {
   const supported = new Map();
   const stackCheck = await detectStackCheck(projectRoot, validation.project);
   const referenceCheck = await detectReferenceCheck(projectRoot, validation.project);
+  const verificationEvidenceCheck = detectVerificationEvidenceCheck(validation.state);
   supported.set(stackCheck.category, stackCheck);
   supported.set(referenceCheck.category, referenceCheck);
+  supported.set(verificationEvidenceCheck.category, verificationEvidenceCheck);
 
   const checks = DOCTOR_CATEGORIES.map((category) => supported.get(category) ?? notEvaluated(category));
   const findings = checks.flatMap((check) => check.findings);

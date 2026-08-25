@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 
-const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const npmCli = process.env.npm_execpath;
 
 test('npm package contains the executable runtime contract', () => {
-  const result = spawnSync(npm, ['pack', '--dry-run', '--json'], { encoding: 'utf8' });
-  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.equal(typeof npmCli, 'string', 'npm_execpath must be available under npm test');
+  const result = spawnSync(process.execPath, [npmCli, 'pack', '--dry-run', '--json'], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr || result.stdout || result.error?.message);
 
   const [manifest] = JSON.parse(result.stdout);
   const paths = new Set(manifest.files.map((file) => file.path));

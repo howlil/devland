@@ -19,6 +19,8 @@ The package version describes a release of the Devland implementation. `devland.
 
 A package version may change without changing `devland.contract` when the implementation remains behaviorally compatible with the same engineering contract. Conversely, a breaking change to required Devland engineering semantics must not be hidden inside an implementation-only version change.
 
+Canonical `.devland/state.yaml` remains a concise current/recent work index. Release history belongs in Git tags, release notes, pull requests, and provider evidence rather than an ever-growing canonical work ledger.
+
 ## Behavioral contract changes
 
 For every breaking behavioral-contract change:

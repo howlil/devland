@@ -25,16 +25,38 @@ Devland is **not** a coding agent, CI/CD engine, deployment platform, project-ma
 
 ## Installation
 
-Devland requires **Node.js 22 or newer**. The source is open under the MIT License, but the npm package is not published yet.
+Devland requires **Node.js 22 or newer**. pnpm is the canonical package manager and is pinned through `package.json`.
+
+### Install a tagged version from GitHub
+
+After a tagged release exists, install that exact version directly from GitHub:
+
+```bash
+corepack enable
+pnpm add --global github:howlil/devland#v0.2.0
+```
+
+This keeps installation pinned to a reviewed release tag without requiring public npm publication.
+
+Tagged GitHub Releases also contain the packed package archive. Download the `.tgz` asset and install it with:
+
+```bash
+pnpm add --global ./devland-0.2.0.tgz
+```
+
+### Install from source
 
 ```bash
 git clone https://github.com/howlil/devland.git
 cd devland
-npm ci
-npm link
+corepack enable
+pnpm install --frozen-lockfile
+pnpm link --global
 ```
 
 Then use `devland` from another repository.
+
+> **Windows / WinGet:** WinGet publication is planned after Devland has a verified Windows executable artifact. The current JavaScript package requires Node.js and is intentionally not presented as a fake portable WinGet executable.
 
 ## Quick start
 
@@ -151,8 +173,9 @@ Verification should match blast radius. Ordinary pull requests use the fast Ubun
 ## Development
 
 ```bash
-npm ci
-npm test
+corepack enable
+pnpm install --frozen-lockfile
+pnpm test
 ```
 
 The codebase intentionally avoids speculative abstractions and unnecessary dependencies. For behavior changes, add the smallest useful regression coverage at the level that protects observable behavior.
@@ -179,9 +202,9 @@ Do **not** report vulnerabilities through a public issue. Follow [`SECURITY.md`]
 
 ## Releases and compatibility
 
-The repository is MIT-licensed, but `package.json` intentionally remains `private: true` until public npm publication and package identity are explicitly approved.
+Devland uses semantic package versions independently from the behavioral `devland.contract`. Tagged releases are verified on Ubuntu, Windows, and macOS before the package archive is attached to GitHub Releases.
 
-A public package release must also satisfy the release and compatibility gates in [`docs/release-policy.md`](docs/release-policy.md).
+The repository remains `private: true` for npm publication until public package identity and publication intent are explicitly approved. See [`docs/release-policy.md`](docs/release-policy.md).
 
 ## License
 

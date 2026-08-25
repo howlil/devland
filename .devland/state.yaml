@@ -24,6 +24,8 @@ recently_completed:
       - future unsupported contracts fail explicitly
       - final CI passes on Ubuntu Windows and macOS
     artifacts:
+      spec: null
+      plan: null
       evidence:
         - GitHub Actions run 32780893334 verified RED before init and migration behavior existed
         - GitHub Actions run 32780995788 verified GREEN on Ubuntu Windows and macOS
@@ -50,6 +52,8 @@ recently_completed:
       - unknown adapter paths fail explicitly
       - final CI passes on Ubuntu Windows and macOS
     artifacts:
+      spec: null
+      plan: null
       evidence:
         - GitHub Actions run 32780383630 verified RED before adapter evaluation existed
         - GitHub Actions run 32780591715 verified GREEN on Ubuntu Windows and macOS
@@ -76,6 +80,8 @@ recently_completed:
       - Go evidence works without Go-specific doctor aggregation logic
       - final CI passes on Ubuntu Windows and macOS
     artifacts:
+      spec: null
+      plan: null
       evidence:
         - GitHub Actions run 32780060870 verified RED before normalized repository facts existed
         - GitHub Actions run 32780150058 verified GREEN on Ubuntu Windows and macOS
@@ -103,6 +109,8 @@ recently_completed:
       - unknown signals fail explicitly
       - final CI passes on Ubuntu Windows and macOS
     artifacts:
+      spec: null
+      plan: null
       evidence:
         - GitHub Actions run 32779660616 verified RED before change-aware classification existed
         - GitHub Actions run 32779868109 verified GREEN on Ubuntu Windows and macOS
@@ -132,6 +140,8 @@ recently_completed:
       - provider-specific evidence does not redefine canonical project semantics
       - final CI passes on Ubuntu Windows and macOS
     artifacts:
+      spec: null
+      plan: null
       evidence:
         - GitHub Actions run 32779155534 verified RED before GitHub evidence normalization existed
         - GitHub Actions run 32779466715 verified GREEN on Ubuntu Windows and macOS

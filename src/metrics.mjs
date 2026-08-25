@@ -102,6 +102,13 @@ function metricEvidenceStatus(paired) {
   return 'complete';
 }
 
+function coverageStatus(metricEvidence) {
+  const statuses = Object.values(metricEvidence);
+  if (statuses.every((status) => status === 'empty')) return 'empty';
+  if (statuses.every((status) => status === 'complete')) return 'complete';
+  return 'partial';
+}
+
 function evidenceStatus(incomplete, observedLifecycleEvidence) {
   if (!observedLifecycleEvidence) return 'empty';
   const hasIncompleteLifecycle = Object.values(incomplete).some(
@@ -138,6 +145,7 @@ export function calculateFlowMetrics(events, { productionEnvironments = [] } = {
     bottleneck,
     incomplete,
     metric_evidence: metricEvidence,
+    coverage_status: coverageStatus(metricEvidence),
     evidence_status: evidenceStatus(incomplete, hasObservedLifecycleEvidence(events, production)),
   };
 }
@@ -149,12 +157,13 @@ export async function flowReport(projectRoot = process.cwd()) {
   }
 
   const events = await readEngineeringEvents(projectRoot);
-  const { metrics, bottleneck, incomplete, metric_evidence, evidence_status } = calculateFlowMetrics(events, {
+  const { metrics, bottleneck, incomplete, metric_evidence, coverage_status, evidence_status } = calculateFlowMetrics(events, {
     productionEnvironments: canonical.project.delivery?.production_environments ?? [],
   });
   return {
     event_count: events.length,
     evidence_status,
+    coverage_status,
     metric_evidence,
     metrics,
     bottleneck,

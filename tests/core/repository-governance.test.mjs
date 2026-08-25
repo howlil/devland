@@ -14,16 +14,20 @@ test('default CI is fast while explicit cross-platform verification remains avai
   assert.equal(fastWorkflow.includes('windows-latest'), false, 'default CI should not pay Windows cost');
   assert.equal(fastWorkflow.includes('macos-latest'), false, 'default CI should not pay macOS cost');
   assert.match(fastWorkflow, /node-version:\s*22/);
-  assert.match(fastWorkflow, /npm ci/);
-  assert.match(fastWorkflow, /npm test/);
+  assert.match(fastWorkflow, /corepack enable/);
+  assert.match(fastWorkflow, /pnpm install --frozen-lockfile/);
+  assert.match(fastWorkflow, /pnpm test/);
+  assert.doesNotMatch(fastWorkflow, /npm ci|npm test/);
 
   for (const os of ['ubuntu-latest', 'windows-latest', 'macos-latest']) {
     assert.equal(crossPlatformWorkflow.includes(os), true, `cross-platform workflow missing ${os}`);
   }
   assert.match(crossPlatformWorkflow, /workflow_dispatch/);
   assert.match(crossPlatformWorkflow, /node-version:\s*22/);
-  assert.match(crossPlatformWorkflow, /npm ci/);
-  assert.match(crossPlatformWorkflow, /npm test/);
+  assert.match(crossPlatformWorkflow, /corepack enable/);
+  assert.match(crossPlatformWorkflow, /pnpm install --frozen-lockfile/);
+  assert.match(crossPlatformWorkflow, /pnpm test/);
+  assert.doesNotMatch(crossPlatformWorkflow, /npm ci|npm test/);
 });
 
 test('repository documents a private security reporting path', async () => {

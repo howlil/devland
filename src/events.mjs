@@ -8,6 +8,15 @@ import { validateCanonical } from './runtime.mjs';
 const EVENT_SCHEMA_URL = new URL('../schemas/engineering-event.schema.json', import.meta.url);
 export const EVENT_LOG_PATH = '.devland/runtime/events.ndjson';
 const EVENT_LOCK_PATH = '.devland/runtime/events.lock';
+const CANONICAL_IDENTITY_FIELDS = [
+  'id',
+  'source',
+  'work_id',
+  'change_id',
+  'commit_sha',
+  'deployment_id',
+  'environment',
+];
 
 async function loadValidator() {
   const schema = JSON.parse(await readFile(EVENT_SCHEMA_URL, 'utf8'));
@@ -27,9 +36,12 @@ function assertRealTimestamp(event) {
   }
 }
 
-function assertCanonicalSource(event) {
-  if (event.source.trim() !== event.source) {
-    throw new Error(`Invalid engineering event source: source must not contain leading or trailing whitespace`);
+function assertCanonicalIdentityStrings(event) {
+  for (const field of CANONICAL_IDENTITY_FIELDS) {
+    const value = event[field];
+    if (typeof value === 'string' && value.trim() !== value) {
+      throw new Error(`Invalid engineering event ${field}: identity strings must not contain leading or trailing whitespace`);
+    }
   }
 }
 
@@ -38,7 +50,7 @@ function validateEventWith(event, validate) {
     throw new Error(`Invalid engineering event: ${formatValidationErrors(validate.errors)}`);
   }
   assertRealTimestamp(event);
-  assertCanonicalSource(event);
+  assertCanonicalIdentityStrings(event);
 }
 
 async function readExistingEvents(logPath, validate) {

@@ -22,12 +22,23 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Core test suite
         run: pnpm test -- --test-name-pattern='^(?!.*packed Devland installs|.*installed package resolves)'
-      - name: Verify package archive
+      - name: Build package archive
         run: |
           mkdir -p dist
           pnpm pack --pack-destination dist
           test -n "$(find dist -maxdepth 1 -name 'devland-*.tgz' -print -quit)"
-      - name: Installed artifact smoke
-        run: pnpm test -- --test-name-pattern='packed Devland installs and runs init validate and context outside the source tree'
-      - name: Installed executable resolution
-        run: pnpm test -- --test-name-pattern='installed package resolves the devland executable through pnpm exec'
+      - name: Prepare install consumer
+        run: |
+          mkdir -p "$RUNNER_TEMP/devland-consumer"
+          printf '{"name":"devland-smoke-consumer","private":true}\n' > "$RUNNER_TEMP/devland-consumer/package.json"
+      - name: Install package archive
+        run: pnpm --dir "$RUNNER_TEMP/devland-consumer" add --ignore-scripts "file:$GITHUB_WORKSPACE/dist/devland-0.2.0.tgz"
+      - name: Run installed init
+        working-directory: ${{ runner.temp }}/devland-consumer
+        run: pnpm exec devland init smoke-consumer
+      - name: Run installed validate
+        working-directory: ${{ runner.temp }}/devland-consumer
+        run: pnpm exec devland validate
+      - name: Run installed context
+        working-directory: ${{ runner.temp }}/devland-consumer
+        run: pnpm exec devland context develop-change

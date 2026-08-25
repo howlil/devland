@@ -63,6 +63,8 @@ devland validate
 devland doctor
 ```
 
+Initialization refuses to overwrite an existing `.devland/project.yaml` or `.devland/state.yaml`; existing canonical state must be handled explicitly rather than silently replaced.
+
 Resolve engineering context for a normal change:
 
 ```bash

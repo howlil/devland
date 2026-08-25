@@ -18,6 +18,23 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm test
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - name: Build package archive
+        run: |
+          mkdir -p dist
+          pnpm pack --pack-destination dist
+          test -n "$(find dist -maxdepth 1 -name 'devland-*.tgz' -print -quit)"
+      - name: Prepare install consumer
+        run: |
+          mkdir -p "$RUNNER_TEMP/devland-consumer"
+          printf '{"name":"devland-smoke-consumer","private":true}\n' > "$RUNNER_TEMP/devland-consumer/package.json"
+      - name: Install package archive
+        run: pnpm --dir "$RUNNER_TEMP/devland-consumer" add --ignore-scripts "file:$GITHUB_WORKSPACE/dist/devland-0.2.0.tgz"
+      - name: Smoke installed CLI
+        working-directory: ${{ runner.temp }}/devland-consumer
+        run: |
+          pnpm exec devland init smoke-consumer
+          pnpm exec devland validate
+          pnpm exec devland context develop-change

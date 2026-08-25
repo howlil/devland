@@ -15,12 +15,16 @@ async function exists(path) {
   }
 }
 
+const npmRunCommand = /(?:^|\n)\s*-\s*run:\s*npm\s+(?:ci|test)\b/m;
+
 test('package metadata is OSS-ready while npm publication remains intentionally private', async () => {
   const pkg = JSON.parse(await read('package.json'));
 
+  assert.equal(pkg.version, '0.2.0');
   assert.equal(pkg.private, true);
   assert.equal(pkg.license, 'MIT');
   assert.equal(pkg.engines?.node, '>=22');
+  assert.match(pkg.packageManager ?? '', /^pnpm@11\.21\.0$/);
   assert.equal(pkg.dependencies?.ajv !== undefined, true, 'ajv must be a runtime dependency');
   assert.equal(pkg.dependencies?.yaml !== undefined, true, 'yaml must be a runtime dependency');
   assert.equal(pkg.devDependencies?.ajv, undefined);
@@ -34,6 +38,20 @@ test('package metadata is OSS-ready while npm publication remains intentionally 
   assert.equal(Array.isArray(pkg.files), true);
   for (const required of ['bin/', 'src/', 'core/', 'profiles/', 'schemas/', 'templates/', 'adapters/']) {
     assert.equal(pkg.files.includes(required), true, `package files missing ${required}`);
+  }
+});
+
+test('pnpm is the canonical reproducible package manager', async () => {
+  assert.equal(await exists('pnpm-lock.yaml'), true, 'pnpm lockfile is required');
+  assert.equal(await exists('package-lock.json'), false, 'npm lockfile must be removed after migration');
+
+  const ci = await read('.github/workflows/ci.yml');
+  const crossPlatform = await read('.github/workflows/cross-platform.yml');
+  for (const workflow of [ci, crossPlatform]) {
+    assert.match(workflow, /corepack enable/);
+    assert.match(workflow, /pnpm install --frozen-lockfile/);
+    assert.match(workflow, /pnpm test/);
+    assert.doesNotMatch(workflow, npmRunCommand);
   }
 });
 
@@ -61,6 +79,19 @@ test('README exposes deterministic initialization and migration commands', async
   assert.match(readme, /contract 1|contract `?1`?/i);
 });
 
+test('tagged releases are gated and produce a downloadable package archive', async () => {
+  const workflow = await read('.github/workflows/release.yml');
+
+  assert.match(workflow, /tags:/);
+  assert.match(workflow, /ubuntu-latest/);
+  assert.match(workflow, /windows-latest/);
+  assert.match(workflow, /macos-latest/);
+  assert.match(workflow, /pnpm install --frozen-lockfile/);
+  assert.match(workflow, /pnpm pack/);
+  assert.match(workflow, /gh release create/);
+  assert.match(workflow, /Tag .* does not match package version/);
+});
+
 test('release policy separates source licensing, package publication, and behavioral compatibility', async () => {
   const policy = await read('docs/release-policy.md');
 
@@ -71,4 +102,5 @@ test('release policy separates source licensing, package publication, and behavi
   assert.match(policy, /migration/i);
   assert.match(policy, /private.*true|private: true/i);
   assert.match(policy, /do not publish|must not publish|publishing.*blocked/i);
+  assert.match(policy, /GitHub Release/i);
 });

@@ -21,19 +21,21 @@ Please avoid speculative abstractions, provider integrations without a current c
 Requirements:
 
 - Node.js 22+
-- npm
+- Corepack
+- pnpm 11.21.0, pinned by `packageManager` in `package.json`
 
 ```bash
 git clone https://github.com/howlil/devland.git
 cd devland
-npm ci
-npm test
+corepack enable
+pnpm install --frozen-lockfile
+pnpm test
 ```
 
 For CLI development you can also run:
 
 ```bash
-npm run devland -- validate
+pnpm devland -- validate
 ```
 
 ## Making a change
@@ -57,7 +59,7 @@ Verification should match risk:
 The normal repository gate is:
 
 ```bash
-npm test
+pnpm test
 ```
 
 ## Pull requests

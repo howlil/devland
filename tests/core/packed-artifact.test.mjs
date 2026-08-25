@@ -1,16 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { spawnSync } from 'node:child_process';
+import { access, readFile } from 'node:fs/promises';
 
-const npmCli = process.env.npm_execpath;
+async function exists(path) {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
-test('npm package contains the executable runtime contract', () => {
-  assert.equal(typeof npmCli, 'string', 'npm_execpath must be available under npm test');
-  const result = spawnSync(process.execPath, [npmCli, 'pack', '--dry-run', '--json'], { encoding: 'utf8' });
-  assert.equal(result.status, 0, result.stderr || result.stdout || result.error?.message);
+test('package manifest includes the executable runtime contract', async () => {
+  const pkg = JSON.parse(await readFile('package.json', 'utf8'));
+  const includedRoots = new Set(pkg.files ?? []);
 
-  const [manifest] = JSON.parse(result.stdout);
-  const paths = new Set(manifest.files.map((file) => file.path));
+  for (const requiredRoot of ['bin/', 'src/', 'core/', 'profiles/', 'schemas/', 'templates/', 'adapters/']) {
+    assert.equal(includedRoots.has(requiredRoot), true, `package files missing ${requiredRoot}`);
+  }
 
   for (const required of [
     'bin/devland.mjs',
@@ -22,6 +29,6 @@ test('npm package contains the executable runtime contract', () => {
     'profiles/project-types/backend.md',
     'adapters/generic/README.md',
   ]) {
-    assert.equal(paths.has(required), true, `packed artifact missing ${required}`);
+    assert.equal(await exists(required), true, `package source missing ${required}`);
   }
 });

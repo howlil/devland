@@ -48,7 +48,7 @@ test('package and template declare the current compatibility boundary', async ()
   const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
   const template = YAML.parse(await readFile('templates/project.yaml', 'utf8'));
 
-  assert.equal(packageJson.version, '0.1.0');
+  assert.equal(packageJson.version, '0.2.0');
   assert.equal(packageJson.engines?.node, '>=22');
   assert.deepEqual(template.devland, { contract: '1' });
 });

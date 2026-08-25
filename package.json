@@ -1,6 +1,6 @@
 {
   "name": "devland",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Agent-agnostic engineering context and deterministic repository diagnostics for AI-assisted software development.",
   "keywords": [
@@ -16,6 +16,7 @@
   },
   "license": "MIT",
   "type": "module",
+  "packageManager": "pnpm@11.21.0",
   "engines": {
     "node": ">=22"
   },

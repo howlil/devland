@@ -49,6 +49,9 @@ function pairDurations(events, spec, productionEnvironments) {
   }
 
   const durations = [];
+  let unmatchedStarts = 0;
+  let unmatchedEnds = 0;
+
   for (const group of groups.values()) {
     const ordered = [...group].sort((a, b) => timestamp(a) - timestamp(b));
     const pendingStarts = [];
@@ -58,15 +61,21 @@ function pairDurations(events, spec, productionEnvironments) {
         pendingStarts.push(event);
         continue;
       }
-      if (event.type !== spec.end || pendingStarts.length === 0) continue;
+      if (event.type !== spec.end) continue;
+      if (pendingStarts.length === 0) {
+        unmatchedEnds += 1;
+        continue;
+      }
 
       const started = pendingStarts.shift();
       const duration = timestamp(event) - timestamp(started);
       if (duration >= 0) durations.push(duration);
     }
+
+    unmatchedStarts += pendingStarts.length;
   }
 
-  return durations;
+  return { durations, unmatchedStarts, unmatchedEnds };
 }
 
 function aggregate(durations) {
@@ -82,8 +91,14 @@ function aggregate(durations) {
 export function calculateFlowMetrics(events, { productionEnvironments = [] } = {}) {
   const production = new Set(productionEnvironments);
   const metrics = {};
+  const incomplete = {};
   for (const spec of METRIC_SPECS) {
-    metrics[spec.name] = aggregate(pairDurations(events, spec, production));
+    const paired = pairDurations(events, spec, production);
+    metrics[spec.name] = aggregate(paired.durations);
+    incomplete[spec.name] = {
+      unmatched_starts: paired.unmatchedStarts,
+      unmatched_ends: paired.unmatchedEnds,
+    };
   }
 
   let bottleneck = null;
@@ -94,7 +109,7 @@ export function calculateFlowMetrics(events, { productionEnvironments = [] } = {
     }
   }
 
-  return { metrics, bottleneck };
+  return { metrics, bottleneck, incomplete };
 }
 
 export async function flowReport(projectRoot = process.cwd()) {
@@ -104,12 +119,13 @@ export async function flowReport(projectRoot = process.cwd()) {
   }
 
   const events = await readEngineeringEvents(projectRoot);
-  const { metrics, bottleneck } = calculateFlowMetrics(events, {
+  const { metrics, bottleneck, incomplete } = calculateFlowMetrics(events, {
     productionEnvironments: canonical.project.delivery?.production_environments ?? [],
   });
   return {
     event_count: events.length,
     metrics,
     bottleneck,
+    incomplete,
   };
 }

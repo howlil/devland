@@ -109,9 +109,10 @@ async function detectReferenceCheck(projectRoot, project) {
 }
 
 async function detectAdapterDivergenceCheck(projectRoot) {
+  const adapterIds = ['generic', 'agents-md'];
   try {
     const context = await resolveContext('develop-change', projectRoot);
-    const parity = evaluateAdapterParity(context, ['generic', 'agents-md']);
+    const parity = evaluateAdapterParity(context, adapterIds);
     const findings = parity.failures.map((failure) => ({
       category: 'adapter duplication/divergence',
       evidence: [failure.adapter],
@@ -124,6 +125,7 @@ async function detectAdapterDivergenceCheck(projectRoot) {
       status: findings.length > 0 ? 'findings' : 'clean',
       findings,
       uncertainty: [],
+      evaluated_adapters: parity.adapters.map((adapter) => adapter.id).sort(),
     };
   } catch (error) {
     return {
@@ -131,9 +133,10 @@ async function detectAdapterDivergenceCheck(projectRoot) {
       status: 'partial',
       findings: [],
       uncertainty: [{
-        evidence: ['develop-change', 'generic', 'agents-md'],
+        evidence: ['develop-change', ...adapterIds],
         message: error instanceof Error ? error.message : String(error),
       }],
+      evaluated_adapters: adapterIds.slice().sort(),
     };
   }
 }

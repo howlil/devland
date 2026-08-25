@@ -5,11 +5,10 @@ import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-const pnpmCli = process.env.npm_execpath;
+const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
 
 function runPnpm(args, cwd) {
-  assert.equal(typeof pnpmCli, 'string', 'package-manager executable must be available under pnpm test');
-  return spawnSync(process.execPath, [pnpmCli, ...args], { cwd, encoding: 'utf8' });
+  return spawnSync(pnpmCommand, args, { cwd, encoding: 'utf8' });
 }
 
 test('installed package resolves the devland executable through pnpm exec', async () => {

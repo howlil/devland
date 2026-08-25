@@ -20,4 +20,11 @@ jobs:
           node-version: 22
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
-      - run: pnpm test
+      - name: Core test suite
+        run: pnpm test -- --test-name-pattern='^(?!.*packed Devland|.*installed package resolves|.*pnpm package contains)'
+      - name: Packed artifact contract
+        run: pnpm test -- --test-name-pattern='pnpm package contains the executable runtime contract'
+      - name: Installed artifact smoke
+        run: pnpm test -- --test-name-pattern='packed Devland installs and runs init validate and context outside the source tree'
+      - name: Installed executable resolution
+        run: pnpm test -- --test-name-pattern='installed package resolves the devland executable through pnpm exec'

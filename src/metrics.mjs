@@ -44,6 +44,7 @@ function hasObservedLifecycleEvidence(events, productionEnvironments) {
 
 function pairDurations(events, spec, productionEnvironments) {
   const groups = new Map();
+  const observedSources = new Set();
   let observedEvents = 0;
 
   for (const event of events) {
@@ -51,6 +52,7 @@ function pairDurations(events, spec, productionEnvironments) {
     const correlation = correlationKey(event, spec.keys);
     if (!correlation) continue;
     observedEvents += 1;
+    if (typeof event.source === 'string' && event.source.length > 0) observedSources.add(event.source);
     const group = groups.get(correlation) ?? [];
     group.push(event);
     groups.set(correlation, group);
@@ -83,7 +85,13 @@ function pairDurations(events, spec, productionEnvironments) {
     unmatchedStarts += pendingStarts.length;
   }
 
-  return { durations, unmatchedStarts, unmatchedEnds, observedEvents };
+  return {
+    durations,
+    unmatchedStarts,
+    unmatchedEnds,
+    observedEvents,
+    observedSources: [...observedSources].sort(),
+  };
 }
 
 function aggregate(durations) {
@@ -122,6 +130,7 @@ export function calculateFlowMetrics(events, { productionEnvironments = [] } = {
   const metrics = {};
   const incomplete = {};
   const metricEvidence = {};
+  const metricSources = {};
   for (const spec of METRIC_SPECS) {
     const paired = pairDurations(events, spec, production);
     metrics[spec.name] = aggregate(paired.durations);
@@ -130,6 +139,7 @@ export function calculateFlowMetrics(events, { productionEnvironments = [] } = {
       unmatched_ends: paired.unmatchedEnds,
     };
     metricEvidence[spec.name] = metricEvidenceStatus(paired);
+    metricSources[spec.name] = paired.observedSources;
   }
 
   let bottleneck = null;
@@ -145,6 +155,7 @@ export function calculateFlowMetrics(events, { productionEnvironments = [] } = {
     bottleneck,
     incomplete,
     metric_evidence: metricEvidence,
+    metric_sources: metricSources,
     coverage_status: coverageStatus(metricEvidence),
     evidence_status: evidenceStatus(incomplete, hasObservedLifecycleEvidence(events, production)),
   };
@@ -157,7 +168,15 @@ export async function flowReport(projectRoot = process.cwd()) {
   }
 
   const events = await readEngineeringEvents(projectRoot);
-  const { metrics, bottleneck, incomplete, metric_evidence, coverage_status, evidence_status } = calculateFlowMetrics(events, {
+  const {
+    metrics,
+    bottleneck,
+    incomplete,
+    metric_evidence,
+    metric_sources,
+    coverage_status,
+    evidence_status,
+  } = calculateFlowMetrics(events, {
     productionEnvironments: canonical.project.delivery?.production_environments ?? [],
   });
   return {
@@ -165,6 +184,7 @@ export async function flowReport(projectRoot = process.cwd()) {
     evidence_status,
     coverage_status,
     metric_evidence,
+    metric_sources,
     metrics,
     bottleneck,
     incomplete,

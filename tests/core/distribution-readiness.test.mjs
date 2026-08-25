@@ -79,17 +79,20 @@ test('README exposes deterministic initialization and migration commands', async
   assert.match(readme, /contract 1|contract `?1`?/i);
 });
 
-test('tagged releases are gated and produce a downloadable package archive', async () => {
+test('release branches are gated before creating a tag and downloadable artifact', async () => {
   const workflow = await read('.github/workflows/release.yml');
 
-  assert.match(workflow, /tags:/);
+  assert.match(workflow, /release\/v\*/);
+  assert.match(workflow, /expected_branch="release\/\$tag"/);
   assert.match(workflow, /ubuntu-latest/);
   assert.match(workflow, /windows-latest/);
   assert.match(workflow, /macos-latest/);
   assert.match(workflow, /pnpm install --frozen-lockfile/);
   assert.match(workflow, /pnpm pack/);
+  assert.match(workflow, /git tag -a/);
+  assert.match(workflow, /git push origin "refs\/tags\/\$TAG"/);
   assert.match(workflow, /gh release create/);
-  assert.match(workflow, /Tag .* does not match package version/);
+  assert.match(workflow, /gh release upload/);
 });
 
 test('release policy separates source licensing, package publication, and behavioral compatibility', async () => {

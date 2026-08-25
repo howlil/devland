@@ -22,12 +22,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Core test suite
         run: pnpm test -- --test-name-pattern='^(?!.*packed Devland installs|.*installed package resolves)'
-      - name: Installed artifact smoke
-        run: pnpm test -- --test-name-pattern='packed Devland installs and runs init validate and context outside the source tree'
-      - name: Installed executable resolution
-        run: pnpm test -- --test-name-pattern='installed package resolves the devland executable through pnpm exec'
       - name: Verify package archive
         run: |
           mkdir -p dist
           pnpm pack --pack-destination dist
           test -n "$(find dist -maxdepth 1 -name 'devland-*.tgz' -print -quit)"
+      - name: Installed artifact smoke
+        run: pnpm test -- --test-name-pattern='packed Devland installs and runs init validate and context outside the source tree'
+      - name: Installed executable resolution
+        run: pnpm test -- --test-name-pattern='installed package resolves the devland executable through pnpm exec'

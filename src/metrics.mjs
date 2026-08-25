@@ -50,6 +50,8 @@ function pairDurations(events, spec, productionEnvironments) {
   const groups = new Map();
   const observedSources = new Set();
   let observedEvents = 0;
+  let firstObserved = null;
+  let lastObserved = null;
 
   for (const event of events) {
     if (!includeEvent(event, spec, productionEnvironments)) continue;
@@ -57,6 +59,15 @@ function pairDurations(events, spec, productionEnvironments) {
     if (!correlation) continue;
     observedEvents += 1;
     if (typeof event.source === 'string' && event.source.length > 0) observedSources.add(event.source);
+
+    const occurredAt = timestamp(event);
+    if (!firstObserved || occurredAt < firstObserved.ms) {
+      firstObserved = { ms: occurredAt, value: event.occurred_at };
+    }
+    if (!lastObserved || occurredAt > lastObserved.ms) {
+      lastObserved = { ms: occurredAt, value: event.occurred_at };
+    }
+
     const group = groups.get(correlation) ?? [];
     group.push(event);
     groups.set(correlation, group);
@@ -95,6 +106,12 @@ function pairDurations(events, spec, productionEnvironments) {
     unmatchedEnds,
     observedEvents,
     observedSources: [...observedSources].sort(),
+    observedWindow: firstObserved && lastObserved
+      ? {
+          first_occurred_at: firstObserved.value,
+          last_occurred_at: lastObserved.value,
+        }
+      : null,
   };
 }
 
@@ -135,6 +152,7 @@ export function calculateFlowMetrics(events, { productionEnvironments = [] } = {
   const incomplete = {};
   const metricEvidence = {};
   const metricSources = {};
+  const metricWindows = {};
   for (const spec of METRIC_SPECS) {
     const paired = pairDurations(events, spec, production);
     metrics[spec.name] = aggregate(paired.durations);
@@ -144,6 +162,7 @@ export function calculateFlowMetrics(events, { productionEnvironments = [] } = {
     };
     metricEvidence[spec.name] = metricEvidenceStatus(paired);
     metricSources[spec.name] = paired.observedSources;
+    metricWindows[spec.name] = paired.observedWindow;
   }
 
   let bottleneck = null;
@@ -160,6 +179,7 @@ export function calculateFlowMetrics(events, { productionEnvironments = [] } = {
     incomplete,
     metric_evidence: metricEvidence,
     metric_sources: metricSources,
+    metric_windows: metricWindows,
     coverage_status: coverageStatus(metricEvidence),
     evidence_status: evidenceStatus(incomplete, hasObservedLifecycleEvidence(events, production)),
   };
@@ -178,6 +198,7 @@ export async function flowReport(projectRoot = process.cwd()) {
     incomplete,
     metric_evidence,
     metric_sources,
+    metric_windows,
     coverage_status,
     evidence_status,
   } = calculateFlowMetrics(events, {
@@ -189,6 +210,7 @@ export async function flowReport(projectRoot = process.cwd()) {
     coverage_status,
     metric_evidence,
     metric_sources,
+    metric_windows,
     metrics,
     bottleneck,
     incomplete,

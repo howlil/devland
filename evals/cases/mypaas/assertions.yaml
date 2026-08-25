@@ -20,5 +20,4 @@ forbidden_profiles:
 work_model: change
 optional_artifacts:
   - architecture
-doctor_seed_expectations:
-  - adapter duplication/divergence
+doctor_seed_expectations: []

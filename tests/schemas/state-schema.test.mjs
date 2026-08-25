@@ -14,7 +14,18 @@ async function validateFixture(path) {
   return validateValue(await readYaml(path));
 }
 
-test('state schema accepts a generic change without iteration grouping', async () => {
+test('state schema accepts a lightweight current-work item', async () => {
+  const result = await validateValue({
+    schema: 'devland.state/v0',
+    active_work: [{ id: 'dogfood-codeflow', status: 'active', goal: 'Validate Devland on one real vertical slice.' }],
+    blocked: [],
+    recently_completed: [],
+    open_decisions: [],
+  });
+  assert.equal(result.valid, true, JSON.stringify(result.errors));
+});
+
+test('state schema remains backward-compatible with a detailed change', async () => {
   const result = await validateFixture('tests/fixtures/state-valid-change.yaml');
   assert.equal(result.valid, true, JSON.stringify(result.errors));
 });

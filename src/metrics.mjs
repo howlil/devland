@@ -2,7 +2,7 @@ import { readEngineeringEvents } from './events.mjs';
 import { validateCanonical } from './runtime.mjs';
 
 const METRIC_SPECS = [
-  { name: 'idea_to_production', start: 'work.accepted', end: 'deployment.succeeded', keys: ['work_id'], productionEnd: true },
+  { name: 'idea_to_production', start: 'work.accepted', end: 'deployment.succeeded', keys: ['work_id'], productionEnd: true, sourceScoped: false },
   { name: 'review_wait', start: 'review.opened', end: 'review.completed', keys: ['change_id'] },
   { name: 'ci_feedback_latency', start: 'ci.started', end: 'ci.completed', keys: ['change_id'] },
   { name: 'deployment_latency', start: 'deployment.started', end: 'deployment.succeeded', keys: ['deployment_id', 'environment'] },
@@ -26,9 +26,10 @@ function evidenceSource(event) {
   return typeof event.source === 'string' && event.source.length > 0 ? event.source : '__unspecified__';
 }
 
-function correlationKey(event, keys) {
-  const values = keys.map((key) => event[key]);
+function correlationKey(event, spec) {
+  const values = spec.keys.map((key) => event[key]);
   if (values.some((value) => !value)) return null;
+  if (spec.sourceScoped === false) return JSON.stringify(values);
   return JSON.stringify([...values, evidenceSource(event)]);
 }
 
@@ -42,7 +43,7 @@ function includeEvent(event, spec, productionEnvironments) {
 
 function hasObservedLifecycleEvidence(events, productionEnvironments) {
   return events.some((event) => METRIC_SPECS.some((spec) =>
-    includeEvent(event, spec, productionEnvironments) && correlationKey(event, spec.keys) !== null
+    includeEvent(event, spec, productionEnvironments) && correlationKey(event, spec) !== null
   ));
 }
 
@@ -53,7 +54,7 @@ function pairDurations(events, spec, productionEnvironments) {
 
   for (const event of events) {
     if (!includeEvent(event, spec, productionEnvironments)) continue;
-    const correlation = correlationKey(event, spec.keys);
+    const correlation = correlationKey(event, spec);
     if (!correlation) continue;
     observedEvents += 1;
     if (typeof event.source === 'string' && event.source.length > 0) observedSources.add(event.source);

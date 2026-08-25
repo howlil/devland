@@ -2,163 +2,153 @@ schema: devland.state/v0
 active_work: []
 blocked: []
 recently_completed:
-  - id: devland-v1-iteration-11-governance
+  - id: devland-v1-iteration-16-init-migrate
+    kind: feature
+    status: done
+    goal: Provide deterministic repository initialization and behavioral-contract migration before any public distribution.
+    scope:
+      allowed:
+        - safe devland init project-name command
+        - deterministic legacy v0 to contract 1 migration
+        - idempotent current-contract migration
+        - refusal to downgrade unsupported future contracts
+        - rollback when migrated canonical validation fails
+      excluded:
+        - public package publication
+        - software license selection
+        - repository settings mutation
+    acceptance:
+      - init refuses to overwrite existing canonical files
+      - legacy projects migrate deterministically to contract 1
+      - contract 1 migration is idempotent
+      - future unsupported contracts fail explicitly
+      - final CI passes on Ubuntu Windows and macOS
+    artifacts:
+      spec: null
+      plan: null
+      evidence:
+        - GitHub Actions run 32780893334 verified RED before init and migration behavior existed
+        - GitHub Actions run 32780995788 verified GREEN on Ubuntu Windows and macOS
+        - PR-27 merged as ce8ee15e83598851248296d528812145231c31ae
+    branch: feat/devland-v1-iteration-16-init-migrate
+    pull_request: PR-27
+  - id: devland-v1-iteration-15-adapter-evals
     kind: maintenance
     status: done
-    goal: Align Devland repository governance and cross-platform verification with the trust guarantees the tool expects from target projects.
+    goal: Establish deterministic semantic parity evaluation across adapter projections without pretending to benchmark model reasoning.
     scope:
       allowed:
-        - Ubuntu Windows and macOS CI matrix on Node 22
-        - private vulnerability reporting policy
-        - CRLF-safe runtime and test frontmatter parsing
-        - regression coverage for Windows newline behavior
-        - explicit architectural backlog in GitHub issues
+        - generic and AGENTS adapter semantic projections
+        - canonical workflow policy profile lane and capability parity checks
+        - projection byte-size reporting
+        - deterministic CLI evaluation gate
       excluded:
-        - package publication
-        - implicit software license selection
-        - mandatory second human reviewer
-        - branch protection claims without an available repository-settings mutation capability
-        - dashboard database or orchestration scope
+        - model quality leaderboard
+        - chain-of-thought capture
+        - autonomous runtime execution
     acceptance:
-      - governance contract tests fail before cross-platform CI and SECURITY.md exist
-      - the same test suite passes on Ubuntu Windows and macOS
-      - a Windows-only failure is diagnosed and fixed rather than excluded from CI
-      - private vulnerability reporting and public disclosure boundaries are documented
-      - remaining provider adaptive-context doctor-eval and distribution work is visible in GitHub issues
+      - adapter eval tests fail before the evaluator exists
+      - two adapter paths preserve the same semantic invariants
+      - unknown adapter paths fail explicitly
+      - final CI passes on Ubuntu Windows and macOS
     artifacts:
-      spec: docs/superpowers/specs/2026-08-25-devland-trust-hardening-design.md
-      plan: docs/superpowers/plans/2026-08-25-devland-iteration-11-governance.md
+      spec: null
+      plan: null
       evidence:
-        - GitHub Actions run 32775881396 verified RED before the cross-platform and security governance contract existed
-        - GitHub Actions run 32775940246 exposed a real Windows CRLF frontmatter portability defect while Ubuntu and macOS passed
-        - GitHub Actions run 32776377229 verified GREEN on Ubuntu Windows and macOS after newline-agnostic parsing was implemented
-        - GitHub issues 17 through 21 record the remaining provider evidence adaptive context doctor evaluation and public distribution work
-    branch: chore/devland-v1-iteration-11-governance
-    pull_request: PR-16
-  - id: devland-v1-iteration-10-event-integrity
+        - GitHub Actions run 32780383630 verified RED before adapter evaluation existed
+        - GitHub Actions run 32780591715 verified GREEN on Ubuntu Windows and macOS
+        - PR-26 merged as c5f1de3e12fcff05ded5fbb9981ec21906016372
+    branch: test/devland-v1-iteration-15-adapter-evals
+    pull_request: PR-26
+  - id: devland-v1-iteration-14-doctor-facts
+    kind: maintenance
+    status: done
+    goal: Normalize repository evidence before doctor aggregation so new deterministic detectors do not create a language-specific conditional blob.
+    scope:
+      allowed:
+        - normalized repository language and runtime facts
+        - extraction of existing JavaScript and Node evidence
+        - deterministic Go evidence from go.mod
+        - preservation of present absent inaccessible uncertainty
+      excluded:
+        - universal repository scanner
+        - detector plugin framework
+        - LLM stack inference
+    acceptance:
+      - fact-layer tests fail before extraction
+      - current Node and JavaScript doctor behavior remains compatible
+      - Go evidence works without Go-specific doctor aggregation logic
+      - final CI passes on Ubuntu Windows and macOS
+    artifacts:
+      spec: null
+      plan: null
+      evidence:
+        - GitHub Actions run 32780060870 verified RED before normalized repository facts existed
+        - GitHub Actions run 32780150058 verified GREEN on Ubuntu Windows and macOS
+        - PR-25 merged as a88ef61110878469d5decd23f4d19bccc90d5e7c
+    branch: refactor/devland-v1-iteration-14-doctor-facts
+    pull_request: PR-25
+  - id: devland-v1-iteration-13-risk-context
     kind: feature
     status: done
-    goal: Make normalized engineering evidence semantically usable and prevent non-production deployments from closing production cycle metrics.
+    goal: Make execution process proportional to transient per-change risk without making repositories permanently high ceremony.
     scope:
       allowed:
-        - event-type-specific linkage requirements
-        - real timestamp validation
-        - validation of persisted NDJSON events before metrics consumption
-        - explicit canonical production environment names
-        - production-aware idea-to-production timing
-        - environment-aware deployment and recovery correlation
+        - deterministic transient change signals
+        - rapid guided and deliberate execution lanes
+        - highest-risk signal selection
+        - security-boundary profile expansion
       excluded:
-        - provider adapter
-        - durable telemetry service
+        - persisted per-change project metadata
+        - generic numerical risk scoring
+        - autonomous architecture approval
+    acceptance:
+      - risk-context tests fail before classification exists
+      - low-risk work remains rapid with minimal context
+      - security-sensitive changes activate reusable security guidance
+      - unknown signals fail explicitly
+      - final CI passes on Ubuntu Windows and macOS
+    artifacts:
+      spec: null
+      plan: null
+      evidence:
+        - GitHub Actions run 32779660616 verified RED before change-aware classification existed
+        - GitHub Actions run 32779868109 verified GREEN on Ubuntu Windows and macOS
+        - PR-24 merged as b2a99bae76f9c5338c9ce1b5745ca249bbd507e8
+    branch: feat/devland-v1-iteration-13-risk-context
+    pull_request: PR-24
+  - id: devland-v1-iteration-12-github-evidence
+    kind: feature
+    status: done
+    goal: Reconstruct normalized engineering evidence deterministically from durable GitHub provider history instead of depending on one checkout.
+    scope:
+      allowed:
+        - deterministic GitHub evidence normalization
+        - provider-derived stable event IDs
+        - idempotent provider-history replay
+        - stable-ID conflict detection
+        - repository-local concurrent ingestion serialization
+      excluded:
+        - GitHub authentication ownership
+        - provider network client in semantic core
+        - generic provider plugin framework
         - analytics database or dashboard
-        - hard-coded production environment naming
     acceptance:
-      - event and flow integrity tests fail before the semantic requirements are implemented
-      - deployment success without required work deployment and environment linkage is rejected
-      - impossible timestamps are rejected even when their string shape matches the schema pattern
-      - staging deployment success does not close idea-to-production
-      - identical deployment IDs in different environments cannot cross-pair
-      - the final full test suite passes
+      - provider ingestion tests fail before normalization exists
+      - repeated provider history is idempotent
+      - concurrent batches do not drop or duplicate evidence
+      - provider-specific evidence does not redefine canonical project semantics
+      - final CI passes on Ubuntu Windows and macOS
     artifacts:
-      spec: docs/superpowers/specs/2026-08-25-devland-trust-hardening-design.md
-      plan: docs/superpowers/plans/2026-08-25-devland-iteration-10-event-integrity.md
+      spec: null
+      plan: null
       evidence:
-        - GitHub Actions run 32775496147 verified RED for event and production-flow integrity contracts
-        - GitHub Actions run 32775652195 verified GREEN after the event schema timestamp and production-aware metric implementation
-        - GitHub Actions run 32775724318 verified GREEN on the final documented PR head
-    branch: feat/devland-v1-iteration-10-event-integrity
-    pull_request: PR-15
-  - id: devland-v1-iteration-9-contract-versioning
-    kind: feature
-    status: done
-    goal: Separate Devland behavioral compatibility from document schema compatibility so repositories cannot silently receive incompatible engineering semantics.
-    scope:
-      allowed:
-        - required devland.contract canonical project field
-        - runtime supported-contract validation
-        - package version 0.1.0
-        - Node engine contract >=22
-        - repository-wide canonical fixture migration to contract 1
-      excluded:
-        - schema v1 migration
-        - package publication
-        - migration CLI
-        - registry or release automation
-    acceptance:
-      - compatibility tests fail before explicit contract metadata exists
-      - missing behavioral contract is invalid
-      - unsupported behavioral contract fails explicitly
-      - current repository templates evals and fixtures pin contract 1
-      - package and lockfile agree on version and Node engine
-      - the final full test suite passes
-    artifacts:
-      spec: docs/superpowers/specs/2026-08-25-devland-trust-hardening-design.md
-      plan: docs/superpowers/plans/2026-08-25-devland-iteration-9-contract-versioning.md
-      evidence:
-        - GitHub Actions run 32774705503 verified RED before behavioral contract and package compatibility metadata existed
-        - GitHub Actions run 32775141183 verified GREEN after runtime schema package and all canonical fixtures were migrated
-    branch: feat/devland-v1-iteration-9-contract-versioning
-    pull_request: PR-14
-  - id: devland-v1-iteration-8-doctor-confidence
-    kind: feature
-    status: done
-    goal: Prevent executable doctor from making global health claims beyond the diagnostic evidence it actually evaluates.
-    scope:
-      allowed:
-        - explicit global doctor status
-        - per-category diagnostic coverage
-        - all nine doctor categories represented in reports
-        - present absent inaccessible repository probing
-        - uncertainty propagation for unreadable evidence
-      excluded:
-        - implementation of all nine diagnostic categories
-        - automatic canonical rewrite
-        - LLM repository inference
-        - provider-specific diagnostics
-    acceptance:
-      - doctor confidence tests fail while no-finding output still implies global health
-      - unsupported diagnostic categories are reported as not_evaluated
-      - missing files are distinguished from inaccessible evidence
-      - findings remain actionable and evidence-backed
-      - the final full test suite passes
-    artifacts:
-      spec: docs/superpowers/specs/2026-08-25-devland-trust-hardening-design.md
-      plan: docs/superpowers/plans/2026-08-25-devland-iteration-8-doctor-confidence.md
-      evidence:
-        - GitHub Actions run 32774471699 verified RED for doctor coverage and probe semantics
-        - GitHub Actions run 32774557279 verified GREEN after coverage-aware doctor reporting and tri-state probing
-    branch: feat/devland-v1-iteration-8-doctor-confidence
-    pull_request: PR-13
-  - id: devland-v1-iteration-7-canonical-invariants
-    kind: feature
-    status: done
-    goal: Enforce canonical domain invariants beyond JSON shape and prevent explicitly requested profiles from disappearing silently.
-    scope:
-      allowed:
-        - semantic validation after AJV structural validation
-        - globally unique work IDs across state buckets
-        - bucket and status consistency
-        - required resolution of explicit project profiles
-        - optional inferred profile candidates
-      excluded:
-        - canonical schema format migration
-        - automatic state rewrites
-        - mandatory inferred profiles
-        - new dependency
-    acceptance:
-      - semantic invariant tests fail before implementation
-      - duplicate work IDs across buckets are invalid
-      - work status contradictory to its bucket is invalid
-      - missing explicit profile IDs cause context resolution failure
-      - inferred unavailable profiles remain optional
-      - the final full test suite passes
-    artifacts:
-      spec: docs/superpowers/specs/2026-08-25-devland-trust-hardening-design.md
-      plan: docs/superpowers/plans/2026-08-25-devland-iteration-7-canonical-invariants.md
-      evidence:
-        - GitHub Actions run 32774243928 verified RED for canonical semantic invariants
-        - GitHub Actions run 32774333741 verified GREEN after semantic validation and explicit profile resolution
-    branch: feat/devland-v1-iteration-7-canonical-invariants
-    pull_request: PR-12
+        - GitHub Actions run 32779155534 verified RED before GitHub evidence normalization existed
+        - GitHub Actions run 32779466715 verified GREEN on Ubuntu Windows and macOS
+        - PR-23 merged as 9827bd34d664b144331076a129c2d814d34dd7a8
+    branch: feat/devland-v1-iteration-12-github-evidence
+    pull_request: PR-23
 open_decisions:
   - Choose an explicit software license before public package distribution.
+  - Decide public package name scope and publication intent before removing private true.
+  - Configure master branch rules requiring pull requests and successful CI and enable merged-branch cleanup using an administration-capable GitHub settings surface.

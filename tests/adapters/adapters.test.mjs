@@ -62,8 +62,15 @@ test('Devland consumes its own canonical project and state schemas', async () =>
   assert.equal(project.profiles.length, 0);
   assert.equal(state.active_work.length, 0);
   assert.equal(state.blocked.length, 0);
-  assert.equal(state.recently_completed[0]?.id, 'devland-v1-iteration-11-governance');
-  assert.equal(state.recently_completed.some((item) => item.id === 'devland-v1-iteration-7-canonical-invariants'), true);
+
+  const recentIterations = state.recently_completed.map((item) => {
+    assert.equal(item.status, 'done');
+    const match = /^devland-v1-iteration-(\d+)-/.exec(item.id);
+    assert.ok(match, `recent work id is not an iteration id: ${item.id}`);
+    return Number(match[1]);
+  });
+  assert.ok(recentIterations.length > 0 && recentIterations.length <= 5);
+  assert.deepEqual(recentIterations, [...recentIterations].sort((left, right) => right - left));
   assert.equal(state.recently_completed.some((item) => item.id === 'devland-v0'), false);
 });
 

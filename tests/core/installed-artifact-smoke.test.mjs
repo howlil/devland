@@ -1,19 +1,19 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-const npmCli = process.env.npm_execpath;
+const pnpmCli = process.env.npm_execpath;
 
 function run(command, args, cwd) {
   return spawnSync(command, args, { cwd, encoding: 'utf8' });
 }
 
-function runNpm(args, cwd) {
-  assert.equal(typeof npmCli, 'string', 'npm_execpath must be available under npm test');
-  return run(process.execPath, [npmCli, ...args], cwd);
+function runPnpm(args, cwd) {
+  assert.equal(typeof pnpmCli, 'string', 'package-manager executable must be available under pnpm test');
+  return run(process.execPath, [pnpmCli, ...args], cwd);
 }
 
 test('packed Devland installs and runs init validate and context outside the source tree', async () => {
@@ -26,12 +26,13 @@ test('packed Devland installs and runs init validate and context outside the sou
     await mkdir(consumer, { recursive: true });
     await writeFile(join(consumer, 'package.json'), '{"name":"devland-smoke-consumer","private":true}\n');
 
-    const packed = runNpm(['pack', '--pack-destination', packageDir, '--json'], resolve('.'));
+    const packed = runPnpm(['pack', '--pack-destination', packageDir], resolve('.'));
     assert.equal(packed.status, 0, packed.stderr || packed.stdout || packed.error?.message);
-    const [manifest] = JSON.parse(packed.stdout);
-    const tarball = join(packageDir, manifest.filename);
+    const tarballs = (await readdir(packageDir)).filter((name) => name.endsWith('.tgz'));
+    assert.equal(tarballs.length, 1, `expected one package archive, got ${tarballs.join(', ')}`);
+    const tarball = join(packageDir, tarballs[0]);
 
-    const installed = runNpm(['install', '--ignore-scripts', '--no-audit', '--no-fund', tarball], consumer);
+    const installed = runPnpm(['add', '--ignore-scripts', tarball], consumer);
     assert.equal(installed.status, 0, installed.stderr || installed.stdout || installed.error?.message);
 
     const bin = join(consumer, 'node_modules', 'devland', 'bin', 'devland.mjs');

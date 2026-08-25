@@ -28,8 +28,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
 
-  release:
-    name: publish GitHub release
+  artifact:
+    name: verify downloadable artifact
     needs: verify
     runs-on: ubuntu-latest
     steps:
@@ -39,6 +39,39 @@ jobs:
           node-version: 22
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
+      - name: Build package archive
+        shell: bash
+        run: |
+          mkdir -p dist
+          pnpm pack --pack-destination dist
+      - name: Install package archive
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/devland-consumer"
+          printf '{"name":"devland-release-smoke","private":true}\n' > "$RUNNER_TEMP/devland-consumer/package.json"
+          archive="$(find "$GITHUB_WORKSPACE/dist" -maxdepth 1 -name 'devland-*.tgz' -print -quit)"
+          test -n "$archive"
+          pnpm --dir "$RUNNER_TEMP/devland-consumer" add --ignore-scripts "file:$archive"
+      - name: Smoke installed CLI
+        shell: bash
+        working-directory: ${{ runner.temp }}/devland-consumer
+        run: |
+          pnpm exec devland init release-smoke
+          pnpm exec devland validate
+          pnpm exec devland context develop-change
+      - uses: actions/upload-artifact@v4
+        with:
+          name: devland-package
+          path: dist/*.tgz
+
+  release:
+    name: publish GitHub release
+    needs:
+      - verify
+      - artifact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
       - name: Verify tag matches package version
         shell: bash
         run: |
@@ -47,9 +80,10 @@ jobs:
             echo "Tag $GITHUB_REF_NAME does not match package version $expected" >&2
             exit 1
           }
-      - name: Build package archive
-        shell: bash
-        run: pnpm pack --pack-destination dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: devland-package
+          path: dist
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}

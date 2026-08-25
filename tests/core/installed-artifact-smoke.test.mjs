@@ -5,10 +5,15 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const npmCli = process.env.npm_execpath;
 
 function run(command, args, cwd) {
   return spawnSync(command, args, { cwd, encoding: 'utf8' });
+}
+
+function runNpm(args, cwd) {
+  assert.equal(typeof npmCli, 'string', 'npm_execpath must be available under npm test');
+  return run(process.execPath, [npmCli, ...args], cwd);
 }
 
 test('packed Devland installs and runs init validate and context outside the source tree', async () => {
@@ -21,13 +26,13 @@ test('packed Devland installs and runs init validate and context outside the sou
     await mkdir(consumer, { recursive: true });
     await writeFile(join(consumer, 'package.json'), '{"name":"devland-smoke-consumer","private":true}\n');
 
-    const packed = run(npm, ['pack', '--pack-destination', packageDir, '--json'], resolve('.'));
-    assert.equal(packed.status, 0, packed.stderr || packed.stdout);
+    const packed = runNpm(['pack', '--pack-destination', packageDir, '--json'], resolve('.'));
+    assert.equal(packed.status, 0, packed.stderr || packed.stdout || packed.error?.message);
     const [manifest] = JSON.parse(packed.stdout);
     const tarball = join(packageDir, manifest.filename);
 
-    const installed = run(npm, ['install', '--ignore-scripts', '--no-audit', '--no-fund', tarball], consumer);
-    assert.equal(installed.status, 0, installed.stderr || installed.stdout);
+    const installed = runNpm(['install', '--ignore-scripts', '--no-audit', '--no-fund', tarball], consumer);
+    assert.equal(installed.status, 0, installed.stderr || installed.stdout || installed.error?.message);
 
     const bin = join(consumer, 'node_modules', 'devland', 'bin', 'devland.mjs');
     const init = run(process.execPath, [bin, 'init', 'smoke-consumer'], consumer);

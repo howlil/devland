@@ -21,20 +21,10 @@ async function withCanonical(mutator, fn) {
   }
 }
 
-function activeClone(item, id = item.id) {
-  return {
-    ...item,
-    id,
-    status: 'active',
-    branch: 'feat/test-invariant',
-    pull_request: null,
-  };
-}
-
 test('validate rejects duplicate work ids across canonical state buckets', async () => {
   await withCanonical(async (_project, state) => {
-    const completed = state.recently_completed[0];
-    state.active_work.push(activeClone(completed));
+    state.active_work.push({ id: 'duplicate-work', status: 'active', goal: 'Exercise duplicate detection.' });
+    state.blocked.push({ id: 'duplicate-work', status: 'blocked', goal: 'Exercise duplicate detection.' });
   }, async (root) => {
     const result = await validateCanonical(root);
     assert.equal(result.valid, false);
@@ -44,8 +34,7 @@ test('validate rejects duplicate work ids across canonical state buckets', async
 
 test('validate rejects work status that contradicts its state bucket', async () => {
   await withCanonical(async (_project, state) => {
-    const completed = state.recently_completed[0];
-    state.active_work.push({ ...completed, id: 'contradictory-active-work' });
+    state.active_work.push({ id: 'contradictory-active-work', status: 'done', goal: 'Exercise bucket status validation.' });
   }, async (root) => {
     const result = await validateCanonical(root);
     assert.equal(result.valid, false);

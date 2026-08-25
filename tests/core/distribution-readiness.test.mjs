@@ -15,6 +15,8 @@ async function exists(path) {
   }
 }
 
+const npmRunCommand = /(?:^|\n)\s*-\s*run:\s*npm\s+(?:ci|test)\b/m;
+
 test('package metadata is OSS-ready while npm publication remains intentionally private', async () => {
   const pkg = JSON.parse(await read('package.json'));
 
@@ -49,7 +51,7 @@ test('pnpm is the canonical reproducible package manager', async () => {
     assert.match(workflow, /corepack enable/);
     assert.match(workflow, /pnpm install --frozen-lockfile/);
     assert.match(workflow, /pnpm test/);
-    assert.doesNotMatch(workflow, /npm ci|npm test/);
+    assert.doesNotMatch(workflow, npmRunCommand);
   }
 });
 

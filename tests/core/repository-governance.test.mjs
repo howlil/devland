@@ -6,16 +6,24 @@ async function read(path) {
   return readFile(path, 'utf8');
 }
 
-test('CI verifies Devland on Linux Windows and macOS with Node 22', async () => {
-  const workflow = await read('.github/workflows/ci.yml');
+test('default CI is fast while explicit cross-platform verification remains available', async () => {
+  const fastWorkflow = await read('.github/workflows/ci.yml');
+  const crossPlatformWorkflow = await read('.github/workflows/cross-platform.yml');
+
+  assert.match(fastWorkflow, /ubuntu-latest/);
+  assert.equal(fastWorkflow.includes('windows-latest'), false, 'default CI should not pay Windows cost');
+  assert.equal(fastWorkflow.includes('macos-latest'), false, 'default CI should not pay macOS cost');
+  assert.match(fastWorkflow, /node-version:\s*22/);
+  assert.match(fastWorkflow, /npm ci/);
+  assert.match(fastWorkflow, /npm test/);
 
   for (const os of ['ubuntu-latest', 'windows-latest', 'macos-latest']) {
-    assert.equal(workflow.includes(os), true, `CI missing ${os}`);
+    assert.equal(crossPlatformWorkflow.includes(os), true, `cross-platform workflow missing ${os}`);
   }
-  assert.match(workflow, /node-version:\s*22/);
-  assert.match(workflow, /npm ci/);
-  assert.match(workflow, /npm test/);
-  assert.match(workflow, /matrix\.os|\$\{\{\s*matrix\.os\s*\}\}/);
+  assert.match(crossPlatformWorkflow, /workflow_dispatch/);
+  assert.match(crossPlatformWorkflow, /node-version:\s*22/);
+  assert.match(crossPlatformWorkflow, /npm ci/);
+  assert.match(crossPlatformWorkflow, /npm test/);
 });
 
 test('repository documents a private security reporting path', async () => {

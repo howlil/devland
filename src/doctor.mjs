@@ -1,5 +1,6 @@
 import { collectRepositoryFacts, classifyProbeError, probeRepositoryPath } from './facts/repository.mjs';
-import { validateCanonical } from './runtime.mjs';
+import { evaluateAdapterParity } from './evals/adapters.mjs';
+import { resolveContext, validateCanonical } from './runtime.mjs';
 
 export { classifyProbeError };
 
@@ -27,10 +28,6 @@ const UNEVALUATED_REQUIREMENTS = {
   'stale work state': {
     reason: 'Canonical work state cannot be declared stale without deterministic work-lifecycle evidence from VCS or a provider.',
     required_evidence: ['VCS or provider work-lifecycle evidence'],
-  },
-  'adapter duplication/divergence': {
-    reason: 'Adapter divergence requires comparing rendered adapter projections against the same resolved canonical context.',
-    required_evidence: ['resolved canonical context', 'rendered adapter projections'],
   },
   'policy conflict': {
     reason: 'Policy conflict requires deterministic policy-semantic comparison with applicable repository behavior or configuration.',
@@ -111,6 +108,36 @@ async function detectReferenceCheck(projectRoot, project) {
   };
 }
 
+async function detectAdapterDivergenceCheck(projectRoot) {
+  try {
+    const context = await resolveContext('develop-change', projectRoot);
+    const parity = evaluateAdapterParity(context, ['generic', 'agents-md']);
+    const findings = parity.failures.map((failure) => ({
+      category: 'adapter duplication/divergence',
+      evidence: [failure.adapter],
+      canonical: 'generic and agents-md projections preserve identical engineering semantics and capabilities',
+      observed: [failure.invariant],
+      recommendation: 'Make adapter projection logic preserve the same canonical semantics and capability set across adapter paths.',
+    }));
+    return {
+      category: 'adapter duplication/divergence',
+      status: findings.length > 0 ? 'findings' : 'clean',
+      findings,
+      uncertainty: [],
+    };
+  } catch (error) {
+    return {
+      category: 'adapter duplication/divergence',
+      status: 'partial',
+      findings: [],
+      uncertainty: [{
+        evidence: ['develop-change', 'generic', 'agents-md'],
+        message: error instanceof Error ? error.message : String(error),
+      }],
+    };
+  }
+}
+
 function detectVerificationEvidenceCheck(state) {
   const findings = [];
   for (const item of state.recently_completed ?? []) {
@@ -164,9 +191,11 @@ export async function doctorProject(projectRoot = process.cwd()) {
   const supported = new Map();
   const stackCheck = await detectStackCheck(projectRoot, validation.project);
   const referenceCheck = await detectReferenceCheck(projectRoot, validation.project);
+  const adapterDivergenceCheck = await detectAdapterDivergenceCheck(projectRoot);
   const verificationEvidenceCheck = detectVerificationEvidenceCheck(validation.state);
   supported.set(stackCheck.category, stackCheck);
   supported.set(referenceCheck.category, referenceCheck);
+  supported.set(adapterDivergenceCheck.category, adapterDivergenceCheck);
   supported.set(verificationEvidenceCheck.category, verificationEvidenceCheck);
 
   const checks = DOCTOR_CATEGORIES.map((category) => supported.get(category) ?? notEvaluated(category));

@@ -3,6 +3,5 @@ active_work: []
 blocked: []
 recently_completed: []
 open_decisions:
-  - Choose an explicit software license before public package distribution.
-  - Decide public package name scope and publication intent before removing private true.
+  - Decide public npm package name scope and publication intent before removing private true.
   - Configure master branch rules requiring pull requests and successful CI and enable merged-branch cleanup using an administration-capable GitHub settings surface.

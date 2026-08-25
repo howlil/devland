@@ -2,7 +2,19 @@
   "name": "devland",
   "version": "0.1.0",
   "private": true,
-  "description": "Agent-agnostic engineering context and feedback tooling for software developed with AI.",
+  "description": "Agent-agnostic engineering context and deterministic repository diagnostics for AI-assisted software development.",
+  "keywords": [
+    "ai",
+    "developer-tools",
+    "cli",
+    "software-engineering",
+    "coding-agents"
+  ],
+  "homepage": "https://github.com/howlil/devland#readme",
+  "bugs": {
+    "url": "https://github.com/howlil/devland/issues"
+  },
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=22"

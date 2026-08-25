@@ -1,0 +1,40 @@
+name: Feature request
+description: Propose a change based on an observed use case
+title: "proposal: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Devland is intentionally scope-constrained. Start with the observed problem rather than a preferred architecture.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Observed problem
+      description: What real workflow, failure, or repeated friction motivates this proposal?
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current behavior or workaround
+      description: How is this handled today?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Smallest useful outcome
+      description: What should become possible or materially easier?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Link or describe dogfood usage, failures, examples, or other evidence supporting the need.
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope boundaries
+      description: What should explicitly remain out of scope?

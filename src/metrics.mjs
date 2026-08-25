@@ -22,10 +22,14 @@ function timestamp(event) {
   return value;
 }
 
+function evidenceSource(event) {
+  return typeof event.source === 'string' && event.source.length > 0 ? event.source : '__unspecified__';
+}
+
 function correlationKey(event, keys) {
   const values = keys.map((key) => event[key]);
   if (values.some((value) => !value)) return null;
-  return JSON.stringify(values);
+  return JSON.stringify([...values, evidenceSource(event)]);
 }
 
 function includeEvent(event, spec, productionEnvironments) {

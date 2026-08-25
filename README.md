@@ -101,7 +101,7 @@ devland:
   contract: "1"
 ```
 
-Package versions, YAML schema identifiers, and the behavioral contract are separate compatibility dimensions. See [`docs/release-policy.md`](docs/release-policy.md) before changing compatibility boundaries.
+The current supported behavioral contract is contract 1. Package versions, YAML schema identifiers, and the behavioral contract are separate compatibility dimensions. See [`docs/release-policy.md`](docs/release-policy.md) before changing compatibility boundaries.
 
 ## Architecture
 

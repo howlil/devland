@@ -5,15 +5,14 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-const pnpmCli = process.env.npm_execpath;
+const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
 
 function run(command, args, cwd) {
   return spawnSync(command, args, { cwd, encoding: 'utf8' });
 }
 
 function runPnpm(args, cwd) {
-  assert.equal(typeof pnpmCli, 'string', 'package-manager executable must be available under pnpm test');
-  return run(process.execPath, [pnpmCli, ...args], cwd);
+  return run(pnpmCommand, args, cwd);
 }
 
 test('packed Devland installs and runs init validate and context outside the source tree', async () => {

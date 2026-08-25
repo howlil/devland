@@ -6,6 +6,7 @@ import { evaluateAdapterParity } from '../src/evals/adapters.mjs';
 import { flowReport } from '../src/metrics.mjs';
 import { normalizeGitHubEvidence } from '../src/providers/github.mjs';
 import { resolveContext, validateCanonical } from '../src/runtime.mjs';
+import { initializeProject, migrateProject } from '../src/setup.mjs';
 
 function print(value) {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
@@ -26,6 +27,20 @@ function parseJson(value, label) {
 
 async function main() {
   const [command, argument, value] = process.argv.slice(2);
+
+  if (command === 'init') {
+    if (!argument) {
+      fail('Usage: devland init <project-name>');
+      return;
+    }
+    print(await initializeProject(argument));
+    return;
+  }
+
+  if (command === 'migrate') {
+    print(await migrateProject());
+    return;
+  }
 
   if (command === 'validate') {
     const result = await validateCanonical();
@@ -89,7 +104,7 @@ async function main() {
     return;
   }
 
-  fail('Usage: devland <validate|doctor|flow|context <workflow> [change-json]|eval adapters [change-json]|event append <json>|ingest github <json>>');
+  fail('Usage: devland <init <project-name>|migrate|validate|doctor|flow|context <workflow> [change-json]|eval adapters [change-json]|event append <json>|ingest github <json>>');
 }
 
 main().catch((error) => {

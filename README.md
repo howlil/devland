@@ -1,186 +1,233 @@
 # Devland
 
-Devland is a small, agent-agnostic engineering context and feedback tool for software developed with AI. It standardizes project facts, engineering policy, conditional profiles, current work, development workflows, and normalized engineering evidence without forcing every repository to use the same architecture or agent-specific file layout.
+[![CI](https://github.com/howlil/devland/actions/workflows/ci.yml/badge.svg)](https://github.com/howlil/devland/actions/workflows/ci.yml)
 
-## Architecture
+Devland is a small, agent-agnostic engineering context tool for software developed with AI. It keeps stable project facts, engineering constraints, and deterministic repository feedback separate from any particular coding agent, repository provider, CI system, or deployment platform.
 
-```text
-Devland Core + project canonical state
-                  |
-                  v
-          deterministic runtime
-                  |
-                  v
-               adapter
-                  |
-                  v
-             AI runtime
-                  |
-                  v
-     repository / CI / production
-                  |
-                  v
-          normalized evidence
-                  |
-                  v
-             flow feedback
+> **Project status:** experimental and in stabilization/dogfooding. New feature development is intentionally frozen while the current core is evaluated on real software delivery work.
+
+## Why Devland
+
+AI-assisted repositories often accumulate duplicated instructions, plans, state files, agent-specific rules, and process ceremony. Devland's goal is narrower: provide a small canonical engineering context that different AI runtimes can consume without turning project metadata into a second product.
+
+The current design optimizes for:
+
+- agent-agnostic project semantics;
+- minimal relevant context;
+- deterministic validation and diagnostics;
+- explicit, risk-proportional engineering guidance;
+- evidence-driven evolution rather than speculative feature growth.
+
+Devland is **not** a coding agent, GitHub client, CI/CD engine, deployment service, observability backend, project-management system, multi-agent orchestrator, or telemetry platform.
+
+## Core capabilities
+
+The stable core is intentionally small:
+
+| Command | Purpose |
+| --- | --- |
+| `devland init <project-name>` | Create minimal canonical project/work state without overwriting existing Devland files. |
+| `devland migrate` | Upgrade the supported legacy project format to the current behavioral contract. |
+| `devland validate` | Validate canonical state against schemas and deterministic domain invariants. |
+| `devland context <workflow> [change-json]` | Resolve only the policies, profiles, workflow semantics, and change-risk context relevant to a task. |
+| `devland doctor` | Compare canonical context with repository evidence and report deterministic drift/coverage findings. |
+
+The repository also contains dogfood/experimental feedback capabilities:
+
+| Command | Purpose |
+| --- | --- |
+| `devland eval adapters [change-json]` | Check deterministic semantic parity between supported adapter projections. |
+| `devland event append '<json>'` | Append one validated engineering event to the local event spool. |
+| `devland ingest github '<json>'` | Normalize already-obtained GitHub evidence into local Devland events. Devland does not authenticate to or call GitHub itself. |
+| `devland flow` | Derive engineering-flow timing and evidence diagnostics from normalized local events. |
+
+These feedback capabilities are not a reason to expand the product surface. They remain subject to simplification or removal if dogfooding does not demonstrate concrete value.
+
+## Quick start
+
+Devland currently requires **Node.js 22+** and is not published as a public npm package.
+
+```bash
+git clone https://github.com/howlil/devland.git
+cd devland
+npm ci
+npm link
 ```
 
-The AI runtime reasons and orchestrates. Devland defines reusable engineering semantics and deterministic checks. Repository, CI/CD, deployment, and observability systems remain external capabilities.
+Then initialize another repository from that repository's root:
 
-Devland is not an IDE, coding-agent runtime, repository provider, CI engine, deployment platform, analytics database, or autonomous multi-agent system.
+```bash
+cd /path/to/your-project
+devland init my-project
+devland validate
+devland doctor
+```
 
-## Core concepts
+Resolve engineering context for a normal change:
 
-- **Project model** — stable or slowly changing project facts in `.devland/project.yaml`.
-- **Behavioral contract** — `devland.contract` pins the Devland engineering semantics expected by a target repository independently from YAML schema versions.
-- **Work state** — concise current/recent work information in `.devland/state.yaml`; semantic validation rejects duplicate work IDs and bucket/status contradictions.
-- **Core policies** — reusable engineering rules for scope, verification, Git hygiene, dependencies, security, testing, and documentation.
-- **Profiles** — conditional guidance activated by project type, quality concern, stack, delivery model, or material per-change risk. Explicit profile IDs must resolve; inferred candidates remain optional.
-- **Change context** — transient deterministic risk signals select a proportional execution lane without turning one risky change into permanent project-wide ceremony.
-- **Workflows** — vendor-neutral procedures that declare semantic capabilities instead of provider APIs.
-- **Adapters** — projections for a target runtime or instruction format; they are never a second source of project truth.
-- **Adapter evals** — deterministic parity checks that verify different adapter paths preserve the same canonical references, workflow, policies, profiles, execution lane, and declared capabilities.
-- **Engineering events** — normalized provider-agnostic evidence stored locally outside canonical state. Event types require the linkage necessary to interpret them.
-- **Provider normalizers** — deterministic translators from concrete provider evidence into Devland events. They do not own provider authentication or network access.
-- **Flow metrics** — deterministic timing derived from correlated engineering events and explicit production-environment semantics.
+```bash
+devland context develop-change
+```
 
-## Minimal target repository
+Pass transient risk signals only when they apply to the current change:
+
+```bash
+devland context develop-change '{"signals":["security-boundary"]}'
+```
+
+Change risk is transient input. It is not written back into permanent project state.
+
+## Canonical repository model
+
+A Devland-enabled repository is deliberately small:
 
 ```text
 repo/
-├── AGENTS.md              # optional adapter/entry point
+├── AGENTS.md                # optional runtime/agent projection
 └── .devland/
-    ├── project.yaml
-    └── state.yaml
+    ├── project.yaml         # stable project facts and constraints
+    ├── state.yaml           # lightweight current/recent work context
+    └── runtime/             # optional local evidence cache; not canonical truth
 ```
 
-A project model declares its Devland behavioral contract explicitly:
+`project.yaml` is for facts that should remain useful across tasks. `state.yaml` is **not an append-only changelog** and should not require a maintenance PR merely to mirror Git history. Specs, plans, decision records, and evidence documents are conditional artifacts: create them only when they carry durable value that cannot be represented more simply.
+
+A project explicitly pins the Devland behavioral contract:
 
 ```yaml
 devland:
   contract: "1"
 ```
 
-When production cycle metrics are desired, production environments are also explicit rather than inferred from names:
+Package versions, YAML schema identifiers, and the behavioral contract are separate compatibility dimensions. See [`docs/release-policy.md`](docs/release-policy.md) before changing compatibility boundaries.
 
-```yaml
-delivery:
-  model: container-image
-  production_environments:
-    - production
-```
-
-Specs, plans, architecture documents, decisions, and evidence artifacts are conditional. They should exist only when they carry durable value that cannot be represented by the minimal canonical state.
-
-## Current executable
-
-Devland includes a small deterministic Node.js CLI:
-
-```bash
-devland init <project-name>
-devland migrate
-devland validate
-devland doctor
-devland context <workflow> [change-json]
-devland eval adapters [change-json]
-devland event append '<json>'
-devland ingest github '<json>'
-devland flow
-```
-
-- `init` creates minimal contract 1 project/work state and refuses to overwrite a repository when either canonical Devland file already exists.
-- `migrate` upgrades the supported legacy `devland.project/v0` form without a behavioral contract to contract 1, is idempotent for contract 1, and refuses unsupported future contracts rather than downgrading them.
-- `validate` checks canonical project/work state against their schemas and deterministic domain invariants, including the supported Devland behavioral contract.
-- `doctor` compares canonical state with deterministic repository evidence without rewriting canonical truth. Its report exposes per-category coverage and returns `partial` when known diagnostic categories have not been evaluated instead of claiming global health.
-- `context` resolves canonical state, workflow baseline policies, applicable project profiles, and optional transient change-risk expansion for an AI runtime.
-- `eval adapters` runs the same resolved `develop-change` semantics through the current generic and AGENTS adapter paths and fails if semantic/capability parity diverges; it also reports projection byte size for context-efficiency regression tracking.
-- `event append` validates event shape, type-specific linkage, real timestamps, and stable event identity before writing normalized evidence to `.devland/runtime/events.ndjson`.
-- `ingest github` accepts already-obtained GitHub commit, pull-request, workflow-run, and deployment evidence; converts it to stable `devland.event/v1` events; and merges it idempotently into the local spool under a repository-local ingestion lock.
-- `flow` calculates idea-to-production plus actionable stage timing for review, CI feedback, deployment, and failed-deployment recovery. Idea-to-production closes only on a deployment success whose environment is declared production; deployment/recovery pairing includes environment as part of correlation.
-
-### Initialization and compatibility migration
-
-Initialize a repository explicitly rather than copying templates by hand:
-
-```bash
-devland init <project-name>
-```
-
-Initialization writes only `.devland/project.yaml` and `.devland/state.yaml`, keeps unknown project facts unknown, and refuses to overwrite existing canonical state.
-
-For a legacy `devland.project/v0` repository created before the behavioral contract field existed:
-
-```bash
-devland migrate
-```
-
-The current migration boundary is deliberately narrow: legacy v0 without `devland.contract` becomes contract 1. Running it again on contract 1 is a no-op after validation. Unknown or future contract values fail explicitly. Package versions, canonical schema identifiers, and `devland.contract` are separate compatibility dimensions; see `docs/release-policy.md` before changing any of them.
-
-### Proportional change context
-
-Per-change risk is passed as transient input rather than persisted as a project fact:
-
-```bash
-devland context develop-change '{"signals":["security-boundary"]}'
-```
-
-Current deterministic lanes are:
-
-- **rapid** — localized/reversible work or no material signal;
-- **guided** — multi-module, schema-change, or new-api-flow work;
-- **deliberate** — security-boundary, irreversible-migration, data-loss-risk, concurrency-semantics, compatibility-break, or large-blast-radius work.
-
-The highest-risk declared signal wins. Unknown signals fail explicitly rather than silently reducing ceremony. A security-boundary signal also activates the existing `qualities.security-sensitive` guidance even when the entire project is not permanently marked security-sensitive. Change descriptors are never written into canonical project state by context resolution.
-
-### Adapter semantic evaluation
-
-```bash
-devland eval adapters '{"signals":["security-boundary"]}'
-```
-
-The current eval compares generic and AGENTS adapter projections over the same resolved context. It verifies semantic parity and capability parity and reports the serialized projection size for each adapter. Projections intentionally contain canonical references and semantic IDs rather than copied project/workflow contents.
-
-This is **not** an LLM quality benchmark and does not inspect or store model chain-of-thought. Model/runtime behavior evaluation can be layered on top later when a reproducible runtime execution surface exists; the current gate establishes the deterministic semantic baseline those evaluations must preserve.
-
-A runtime or provider integration remains responsible for reading GitHub. Devland does not store GitHub tokens or make authenticated GitHub API calls. The same provider history can be replayed into a fresh checkout because normalized event IDs are derived deterministically from repository and provider identities.
-
-`.devland/runtime/events.ndjson` is a local evidence spool/cache, not the authoritative provider history. Batch ingestion validates the complete incoming batch, detects stable-ID conflicts, serializes concurrent local writers, and replays exact duplicate evidence without duplication.
-
-The executable does not own repository authentication or execute provider-specific repository, CI, deployment, or production actions.
-
-## Workflows
-
-Devland keeps three top-level semantic workflows:
-
-- `bootstrap-project` — normalize a product idea or existing repository into minimal canonical Devland context.
-- `develop-change` — move one logical change through smallest valuable slices, RED -> GREEN -> REFACTOR, focused verification, prompt integration, and production feedback when observable.
-- `doctor-project` — diagnose drift between canonical context, repository evidence, work state, and adapters.
-
-## v1 feedback loop
+## Architecture
 
 ```text
-valuable intent
-    -> smallest valuable slice
-    -> observable acceptance
-    -> RED -> GREEN -> REFACTOR
-    -> small verified change
-    -> integration
-    -> production
-    -> normalized events
-    -> flow metrics
-    -> learn
+            .devland/project.yaml
+                     +
+              repository facts
+                     |
+                     v
+              context resolver
+                     |
+        +------------+------------+
+        |                         |
+        v                         v
+ relevant engineering         repository
+     constraints               doctor
+        |
+        v
+   AI runtime / human
+        |
+        v
+     repository
 ```
 
-Flow metrics use only complete, semantically valid evidence with sufficient correlation. Missing linkage, unknown production environments, or corrupted event evidence are not converted into invented metrics. Provider authentication/collection, dashboards, databases, and autonomous agent orchestration remain outside the current executable scope.
+Optional dogfood feedback path:
 
-## Development and verification
+```text
+GitHub / CI / deployment evidence
+              |
+              v
+      provider normalization
+              |
+              v
+       local event spool
+              |
+              v
+        flow analysis
+```
 
-Devland currently targets Node.js 22 or newer. Repository contract checks use:
+The optional path must remain optional. External systems continue to own authentication, repository access, CI, deployment, and production telemetry.
+
+## Delivery philosophy
+
+Devland is now operated with a strict scope governor:
+
+> A valid improvement is not automatically valid work.
+
+A non-trivial change should be active only when at least one condition is true:
+
+1. the primary user journey fails without it;
+2. it prevents an unacceptable security, data-loss, compatibility, or external-side-effect risk;
+3. real usage/dogfood evidence exposed the problem;
+4. the decision is expensive to reverse after adoption.
+
+Comprehensive audits may identify many valid improvements, but findings should be classified into `now`, `after-feedback`, `later`, or `not-now`. They do not automatically become an implementation queue.
+
+The preferred delivery unit is one coherent vertical outcome, not the smallest possible commit or PR:
+
+```text
+outcome
+  -> acceptance criteria
+  -> smallest coherent change
+  -> proportional verification
+  -> PR
+  -> merge
+  -> observe
+```
+
+## Verification model
+
+Verification is risk-based rather than ceremony-based.
+
+| Level | Typical changes | Expected verification |
+| --- | --- | --- |
+| 0 | Docs, copy, local metadata | Diff/syntax checks where relevant |
+| 1 | Localized deterministic behavior | Focused unit tests + relevant static checks |
+| 2 | Core user-flow behavior | Focused tests + integration/smoke + normal CI |
+| 3 | Persistence, schemas, migrations, security, concurrency, external side effects | Broader affected suite + regression coverage |
+| 4 | Packaging, runtime portability, release-sensitive behavior | Full suite + explicit Linux/macOS/Windows verification |
+
+Normal pull requests run the fast Ubuntu CI path. Cross-platform verification lives in a separate workflow and is run explicitly for portability/release-sensitive work or release tags. This preserves portability coverage without paying three-platform CI cost for every ordinary change.
+
+Local development:
 
 ```bash
 npm ci
 npm test
 ```
 
-Devland is dogfooded against its own canonical state and tested against representative project/evaluation fixtures. Completion claims are expected to be backed by fresh verification evidence rather than inferred from code changes alone.
+## Current stabilization plan
+
+Devland is feature-frozen until it proves that it reduces delivery friction in another repository.
+
+The current evaluation loop is:
+
+```text
+use Devland on a real vertical slice
+        |
+        v
+measure delivery friction
+        |
+        +--> useful capability -> keep
+        |
+        +--> unused ceremony -> simplify/remove
+        |
+        +--> observed defect -> focused fix
+```
+
+The intended dogfood target is a real product-building repository rather than Devland itself. Success is measured by faster delivery of usable product value, not by the number of Devland iterations, schemas, metrics, plans, or evidence artifacts created.
+
+## Contributing
+
+During stabilization, the highest-value contributions are:
+
+- reproducible correctness bugs;
+- security or data-integrity issues;
+- compatibility/portability failures;
+- documentation corrections;
+- concrete dogfood evidence showing that a Devland behavior helps or obstructs delivery.
+
+New feature proposals should include an observed use case and explain why the existing core cannot support it without the proposed change. Please avoid speculative abstractions, provider integrations without a current consumer, or process artifacts created only for hypothetical future scale.
+
+Security-sensitive reports should follow [`SECURITY.md`](SECURITY.md).
+
+## Distribution and license status
+
+`package.json` intentionally remains `private: true`; public npm publication has not been approved. The repository also does not yet declare an explicit software license. Source being publicly visible does **not** grant open-source reuse rights by itself.
+
+License selection, public package identity/publication, and repository governance are tracked in [issue #21](https://github.com/howlil/devland/issues/21).
+
+Until those decisions are explicit, treat Devland as a public experimental source repository rather than a released OSS package.

@@ -6,6 +6,8 @@ async function read(path) {
   return readFile(path, 'utf8');
 }
 
+const npmRunCommand = /(?:^|\n)\s*-\s*run:\s*npm\s+(?:ci|test)\b/m;
+
 test('default CI is fast while explicit cross-platform verification remains available', async () => {
   const fastWorkflow = await read('.github/workflows/ci.yml');
   const crossPlatformWorkflow = await read('.github/workflows/cross-platform.yml');
@@ -17,7 +19,7 @@ test('default CI is fast while explicit cross-platform verification remains avai
   assert.match(fastWorkflow, /corepack enable/);
   assert.match(fastWorkflow, /pnpm install --frozen-lockfile/);
   assert.match(fastWorkflow, /pnpm test/);
-  assert.doesNotMatch(fastWorkflow, /npm ci|npm test/);
+  assert.doesNotMatch(fastWorkflow, npmRunCommand);
 
   for (const os of ['ubuntu-latest', 'windows-latest', 'macos-latest']) {
     assert.equal(crossPlatformWorkflow.includes(os), true, `cross-platform workflow missing ${os}`);
@@ -27,7 +29,7 @@ test('default CI is fast while explicit cross-platform verification remains avai
   assert.match(crossPlatformWorkflow, /corepack enable/);
   assert.match(crossPlatformWorkflow, /pnpm install --frozen-lockfile/);
   assert.match(crossPlatformWorkflow, /pnpm test/);
-  assert.doesNotMatch(crossPlatformWorkflow, /npm ci|npm test/);
+  assert.doesNotMatch(crossPlatformWorkflow, npmRunCommand);
 });
 
 test('repository documents a private security reporting path', async () => {

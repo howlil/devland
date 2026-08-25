@@ -4,7 +4,7 @@
 
 Devland source is published under the **MIT License**. Tagged GitHub Releases are the supported downloadable distribution channel during pre-1.0 stabilization. The npm package is not published yet and `package.json` intentionally remains `"private": true` until package identity and publication intent are explicitly approved.
 
-A successful version tag produces a GitHub Release containing the packed package archive. Users with Node.js 22+ and pnpm may also install a pinned tag directly from GitHub.
+An explicit `release/v<package-version>` branch starts the release workflow. The workflow verifies the release candidate before creating the corresponding `v<package-version>` tag and GitHub Release containing the packed package archive. Users with Node.js 22+ and pnpm may also install that pinned tag directly from GitHub.
 
 Open-source licensing, GitHub Release distribution, and npm registry publication are separate decisions. Publishing downloadable release artifacts does not imply that an official npm package name has been approved.
 
@@ -65,17 +65,19 @@ Migration on contract `1` is idempotent. Unknown or future contracts are rejecte
 
 The current package version is `0.2.0`; this version number does not itself redefine behavioral contract `1`.
 
-## Tagged GitHub release gate
+## GitHub release gate
 
-A `v<package-version>` tag is release-sensitive. The release workflow must verify all of the following before publishing a GitHub Release:
+A release starts from an explicit branch named `release/v<package-version>`. The branch name must exactly match the version declared in `package.json`; a mismatched release branch fails preflight.
 
-- the tag exactly matches `package.json` version;
+Before the workflow creates the corresponding version tag or publishes a GitHub Release, it must verify all of the following:
+
 - `pnpm install --frozen-lockfile` succeeds;
 - the full test suite is green on Ubuntu, Windows, and macOS;
 - the package can be packed successfully;
-- only after those checks pass is the packed archive attached to the GitHub Release.
+- the packed archive can be installed into a clean consumer project;
+- the installed `devland` executable can run `init`, `validate`, and `context develop-change` successfully.
 
-A tag that does not match the package version must fail rather than producing an ambiguous release.
+Only after those checks pass may the workflow create the annotated `v<package-version>` tag and attach the packed archive to the GitHub Release. If that tag already exists, it must point to the same verified commit or the release fails. Re-running a partially completed release may update the release asset for the same verified tag, but must never move an existing version tag.
 
 ## Public npm release gate
 

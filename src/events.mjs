@@ -27,11 +27,18 @@ function assertRealTimestamp(event) {
   }
 }
 
+function assertCanonicalSource(event) {
+  if (event.source.trim() !== event.source) {
+    throw new Error(`Invalid engineering event source: source must not contain leading or trailing whitespace`);
+  }
+}
+
 function validateEventWith(event, validate) {
   if (!validate(event)) {
     throw new Error(`Invalid engineering event: ${formatValidationErrors(validate.errors)}`);
   }
   assertRealTimestamp(event);
+  assertCanonicalSource(event);
 }
 
 async function readExistingEvents(logPath, validate) {

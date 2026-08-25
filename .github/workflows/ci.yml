@@ -20,8 +20,7 @@ jobs:
           node-version: 22
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
-      - name: Core test suite
-        run: pnpm test -- --test-name-pattern='^(?!.*packed Devland installs|.*installed package resolves)'
+      - run: pnpm test
       - name: Build package archive
         run: |
           mkdir -p dist
@@ -33,12 +32,9 @@ jobs:
           printf '{"name":"devland-smoke-consumer","private":true}\n' > "$RUNNER_TEMP/devland-consumer/package.json"
       - name: Install package archive
         run: pnpm --dir "$RUNNER_TEMP/devland-consumer" add --ignore-scripts "file:$GITHUB_WORKSPACE/dist/devland-0.2.0.tgz"
-      - name: Run installed init
+      - name: Smoke installed CLI
         working-directory: ${{ runner.temp }}/devland-consumer
-        run: pnpm exec devland init smoke-consumer
-      - name: Run installed validate
-        working-directory: ${{ runner.temp }}/devland-consumer
-        run: pnpm exec devland validate
-      - name: Run installed context
-        working-directory: ${{ runner.temp }}/devland-consumer
-        run: pnpm exec devland context develop-change
+        run: |
+          pnpm exec devland init smoke-consumer
+          pnpm exec devland validate
+          pnpm exec devland context develop-change

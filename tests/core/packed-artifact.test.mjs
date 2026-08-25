@@ -2,16 +2,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 
-const npmCli = process.env.npm_execpath;
+const pnpmCli = process.env.npm_execpath;
 
-test('npm package contains the executable runtime contract', () => {
-  assert.equal(typeof npmCli, 'string', 'npm_execpath must be available under npm test');
-  const result = spawnSync(process.execPath, [npmCli, 'pack', '--dry-run', '--json'], { encoding: 'utf8' });
+test('pnpm package contains the executable runtime contract', () => {
+  assert.equal(typeof pnpmCli, 'string', 'package-manager executable must be available under pnpm test');
+  const result = spawnSync(process.execPath, [pnpmCli, 'pack', '--dry-run'], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr || result.stdout || result.error?.message);
 
-  const [manifest] = JSON.parse(result.stdout);
-  const paths = new Set(manifest.files.map((file) => file.path));
-
+  const output = `${result.stdout}\n${result.stderr}`;
   for (const required of [
     'bin/devland.mjs',
     'src/runtime.mjs',
@@ -22,6 +20,6 @@ test('npm package contains the executable runtime contract', () => {
     'profiles/project-types/backend.md',
     'adapters/generic/README.md',
   ]) {
-    assert.equal(paths.has(required), true, `packed artifact missing ${required}`);
+    assert.match(output, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `packed artifact missing ${required}`);
   }
 });

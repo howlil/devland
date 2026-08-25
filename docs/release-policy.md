@@ -2,9 +2,11 @@
 
 ## Distribution status
 
-Devland source is published under the **MIT License**. The npm package is not published yet and `package.json` intentionally remains `"private": true` until package identity and publication intent are explicitly approved.
+Devland source is published under the **MIT License**. Tagged GitHub Releases are the supported downloadable distribution channel during pre-1.0 stabilization. The npm package is not published yet and `package.json` intentionally remains `"private": true` until package identity and publication intent are explicitly approved.
 
-Open-source licensing and npm publication are separate decisions. The repository may be used, modified, and redistributed under the MIT License without implying that an official npm package or stable release channel exists.
+A successful version tag produces a GitHub Release containing the packed package archive. Users with Node.js 22+ and pnpm may also install a pinned tag directly from GitHub.
+
+Open-source licensing, GitHub Release distribution, and npm registry publication are separate decisions. Publishing downloadable release artifacts does not imply that an official npm package name has been approved.
 
 Public npm publishing remains blocked until all of the following are explicit:
 
@@ -13,6 +15,19 @@ Public npm publishing remains blocked until all of the following are explicit:
 - repository rules required for the chosen release workflow are configured through an administration-capable GitHub settings surface.
 
 Do not publish the npm package while those decisions remain open.
+
+## Package manager contract
+
+Devland uses pnpm as its canonical package manager. The exact pnpm version is pinned through `packageManager` in `package.json`, and `pnpm-lock.yaml` is the committed dependency lock.
+
+Release and CI installs must use:
+
+```text
+corepack enable
+pnpm install --frozen-lockfile
+```
+
+Do not maintain a second npm lockfile in parallel because competing lockfiles create ambiguous dependency state.
 
 ## Package version and behavioral contract are separate
 
@@ -48,11 +63,23 @@ legacy devland.project/v0 without devland.contract
 
 Migration on contract `1` is idempotent. Unknown or future contracts are rejected rather than downgraded or guessed.
 
-The current package version is `0.1.0`; this version number does not itself redefine behavioral contract `1`.
+The current package version is `0.2.0`; this version number does not itself redefine behavioral contract `1`.
 
-## Release gate
+## Tagged GitHub release gate
 
-Before a future public package release, verify at minimum:
+A `v<package-version>` tag is release-sensitive. The release workflow must verify all of the following before publishing a GitHub Release:
+
+- the tag exactly matches `package.json` version;
+- `pnpm install --frozen-lockfile` succeeds;
+- the full test suite is green on Ubuntu, Windows, and macOS;
+- the package can be packed successfully;
+- only after those checks pass is the packed archive attached to the GitHub Release.
+
+A tag that does not match the package version must fail rather than producing an ambiguous release.
+
+## Public npm release gate
+
+Before a future public npm package release, verify at minimum:
 
 - normal CI is green on the release candidate;
 - explicit Ubuntu, Windows, and macOS verification is green for the release candidate;
@@ -63,3 +90,9 @@ Before a future public package release, verify at minimum:
 - `"private": true` is removed only in the deliberately approved publication change.
 
 Experimental adapter/flow capabilities should not become release blockers unless they are explicitly promoted into the supported public contract.
+
+## Windows Package Manager
+
+WinGet distribution requires a stable Windows installer or portable executable with a versioned download URL and integrity hash. A JavaScript package archive alone is not sufficient as a production-quality WinGet package.
+
+Therefore WinGet publication is intentionally deferred until Devland has a verified Windows executable artifact. Once that artifact exists, its manifest should be submitted to `microsoft/winget-pkgs` and validated through the normal WinGet submission process.

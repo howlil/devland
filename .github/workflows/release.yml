@@ -1,16 +1,37 @@
 name: Release
 
 on:
+  workflow_dispatch:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - 'release/v*'
 
 permissions:
   contents: write
 
 jobs:
+  preflight:
+    name: release preflight
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: version
+        name: Verify release branch matches package version
+        shell: bash
+        run: |
+          tag="v$(node -p "require('./package.json').version")"
+          expected_branch="release/$tag"
+          test "$GITHUB_REF_NAME" = "$expected_branch" || {
+            echo "Release ref $GITHUB_REF_NAME does not match package version branch $expected_branch" >&2
+            exit 1
+          }
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
   verify:
     name: verify (${{ matrix.os }})
+    needs: preflight
     strategy:
       fail-fast: false
       matrix:
@@ -30,7 +51,9 @@ jobs:
 
   artifact:
     name: verify downloadable artifact
-    needs: verify
+    needs:
+      - preflight
+      - verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -67,25 +90,44 @@ jobs:
   release:
     name: publish GitHub release
     needs:
+      - preflight
       - verify
       - artifact
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Verify tag matches package version
-        shell: bash
-        run: |
-          expected="v$(node -p "require('./package.json').version")"
-          test "$GITHUB_REF_NAME" = "$expected" || {
-            echo "Tag $GITHUB_REF_NAME does not match package version $expected" >&2
-            exit 1
-          }
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           name: devland-package
           path: dist
-      - name: Publish release
+      - name: Create verified tag
+        env:
+          TAG: ${{ needs.preflight.outputs.tag }}
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            git fetch origin "refs/tags/$TAG:refs/tags/$TAG"
+            tagged_commit="$(git rev-list -n 1 "$TAG")"
+            test "$tagged_commit" = "$GITHUB_SHA" || {
+              echo "Existing tag $TAG points to $tagged_commit instead of $GITHUB_SHA" >&2
+              exit 1
+            }
+          else
+            git tag -a "$TAG" "$GITHUB_SHA" -m "Devland $TAG"
+            git push origin "refs/tags/$TAG"
+          fi
+      - name: Publish release artifact
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.preflight.outputs.tag }}
         shell: bash
-        run: gh release create "$GITHUB_REF_NAME" dist/*.tgz --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/*.tgz --clobber
+          else
+            gh release create "$TAG" dist/*.tgz --verify-tag --generate-notes --title "$TAG"
+          fi

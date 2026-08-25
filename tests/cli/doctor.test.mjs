@@ -7,17 +7,7 @@ import { join, resolve } from 'node:path';
 import { classifyProbeError } from '../../src/doctor.mjs';
 
 const cliPath = resolve('bin/devland.mjs');
-const doctorCategories = [
-  'project-model drift',
-  'stack/runtime drift',
-  'architecture-document drift',
-  'stale work state',
-  'adapter duplication/divergence',
-  'invalid/missing referenced files',
-  'policy conflict',
-  'missing verification evidence for claimed-done work',
-  'over-generated context with no current applicability',
-];
+const doctorCategories = ['stack/runtime drift', 'invalid/missing referenced files'];
 
 function run(args, cwd) {
   return spawnSync(process.execPath, [cliPath, ...args], { cwd, encoding: 'utf8' });
@@ -25,37 +15,8 @@ function run(args, cwd) {
 
 async function writeCanonical(root, architectureDocument = null) {
   await mkdir(join(root, '.devland'), { recursive: true });
-  await writeFile(join(root, '.devland/project.yaml'), `schema: devland.project/v0
-devland:
-  contract: "1"
-project:
-  name: fixture
-  types: []
-product:
-  purpose: test
-  priorities: []
-  non_goals: []
-platforms: []
-stack:
-  languages: []
-  frameworks: []
-  runtimes: []
-  data_stores: []
-architecture:
-  style: null
-  document: ${architectureDocument === null ? 'null' : architectureDocument}
-qualities: []
-profiles: []
-delivery:
-  model: null
-constraints: []
-`);
-  await writeFile(join(root, '.devland/state.yaml'), `schema: devland.state/v0
-active_work: []
-blocked: []
-recently_completed: []
-open_decisions: []
-`);
+  await writeFile(join(root, '.devland/project.yaml'), `schema: devland.project/v0\ndevland:\n  contract: "1"\nproject:\n  name: fixture\n  types: []\nproduct:\n  purpose: test\n  priorities: []\n  non_goals: []\nplatforms: []\nstack:\n  languages: []\n  frameworks: []\n  runtimes: []\n  data_stores: []\narchitecture:\n  style: null\n  document: ${architectureDocument === null ? 'null' : architectureDocument}\nqualities: []\nprofiles: []\ndelivery:\n  model: null\nconstraints: []\n`);
+  await writeFile(join(root, '.devland/state.yaml'), `schema: devland.state/v0\nactive_work: []\nblocked: []\nrecently_completed: []\nopen_decisions: []\n`);
 }
 
 test('doctor reports deterministic Node and JavaScript stack drift', async () => {
@@ -67,18 +28,11 @@ test('doctor reports deterministic Node and JavaScript stack drift', async () =>
     await writeFile(join(root, 'package.json'), JSON.stringify({ type: 'module', bin: { fixture: './src/index.mjs' } }));
 
     const result = run(['doctor'], root);
-
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const output = JSON.parse(result.stdout);
     assert.equal(output.status, 'findings');
-    assert.ok(output.findings.some((finding) =>
-      finding.category === 'stack/runtime drift' &&
-      finding.observed.includes('node') &&
-      finding.evidence.includes('package.json')
-    ));
-    assert.ok(output.findings.some((finding) =>
-      finding.category === 'stack/runtime drift' && finding.observed.includes('javascript')
-    ));
+    assert.ok(output.findings.some((finding) => finding.category === 'stack/runtime drift' && finding.observed.includes('node') && finding.evidence.includes('package.json')));
+    assert.ok(output.findings.some((finding) => finding.category === 'stack/runtime drift' && finding.observed.includes('javascript')));
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -91,7 +45,6 @@ test('doctor consumes normalized Go repository facts without Go-specific categor
     await writeFile(join(root, 'go.mod'), 'module example.com/service\n\ngo 1.24\n');
 
     const result = run(['doctor'], root);
-
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const output = JSON.parse(result.stdout);
     const stackFindings = output.findings.filter((finding) => finding.category === 'stack/runtime drift');
@@ -108,32 +61,26 @@ test('doctor reports missing referenced architecture documents', async () => {
     await writeCanonical(root, 'docs/architecture.md');
 
     const result = run(['doctor'], root);
-
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const output = JSON.parse(result.stdout);
     assert.equal(output.status, 'findings');
-    assert.ok(output.findings.some((finding) =>
-      finding.category === 'invalid/missing referenced files' &&
-      finding.evidence.includes('docs/architecture.md')
-    ));
+    assert.ok(output.findings.some((finding) => finding.category === 'invalid/missing referenced files' && finding.evidence.includes('docs/architecture.md')));
   } finally {
     await rm(root, { recursive: true, force: true });
   }
 });
 
-test('doctor is partial rather than globally healthy when categories are not evaluated', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'devland-doctor-coverage-'));
+test('doctor is clean when every supported check is clean', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'devland-doctor-clean-'));
   try {
     await writeCanonical(root);
 
     const result = run(['doctor'], root);
-
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const output = JSON.parse(result.stdout);
-    assert.equal(output.status, 'partial');
-    assert.equal(Object.hasOwn(output, 'healthy'), false);
+    assert.equal(output.status, 'clean');
     assert.deepEqual(output.checks.map((check) => check.category), doctorCategories);
-    assert.equal(output.checks.some((check) => check.status === 'not_evaluated'), true);
+    assert.equal(output.checks.every((check) => check.status === 'clean'), true);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

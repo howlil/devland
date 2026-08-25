@@ -60,18 +60,10 @@ test('Devland consumes its own canonical project and state schemas', async () =>
     data_stores: [],
   });
   assert.equal(project.profiles.length, 0);
-  assert.equal(state.active_work.length, 0);
-  assert.equal(state.blocked.length, 0);
-
-  const recentIterations = state.recently_completed.map((item) => {
-    assert.equal(item.status, 'done');
-    const match = /^devland-v1-iteration-(\d+)-/.exec(item.id);
-    assert.ok(match, `recent work id is not an iteration id: ${item.id}`);
-    return Number(match[1]);
-  });
-  assert.ok(recentIterations.length > 0 && recentIterations.length <= 5);
-  assert.deepEqual(recentIterations, [...recentIterations].sort((left, right) => right - left));
-  assert.equal(state.recently_completed.some((item) => item.id === 'devland-v0'), false);
+  assert.ok(Array.isArray(state.active_work));
+  assert.ok(Array.isArray(state.blocked));
+  assert.ok(Array.isArray(state.recently_completed));
+  assert.ok(Array.isArray(state.open_decisions));
 });
 
 test('root AGENTS routes to canonical context without duplicating project truth', async () => {

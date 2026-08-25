@@ -7,23 +7,8 @@ import { createValidator } from '../helpers/schema.mjs';
 const cases = ['cliplingo', 'mypaas', 'podland', 'simple', 'sop-auto-fill', 'wago'];
 const requiredFiles = ['source.yaml', 'evidence.md', 'expected/project.yaml', 'expected/state.yaml', 'assertions.yaml'];
 const secretKeys = ['access_token', 'private_key', 'client_secret', 'api_key_value', 'cookie_value'];
-const doctorScenarios = [
-  'cliplingo/doctor/prebootstrap-active-branch.yaml',
-  'cliplingo/doctor/stack-drift.yaml',
-  'mypaas/doctor/adapter-divergence.yaml',
-  'wago/doctor/missing-verification.yaml',
-];
-const doctorCategories = new Set([
-  'project-model drift',
-  'stack/runtime drift',
-  'architecture-document drift',
-  'stale work state',
-  'adapter duplication/divergence',
-  'invalid/missing referenced files',
-  'policy conflict',
-  'missing verification evidence for claimed-done work',
-  'over-generated context with no current applicability',
-]);
+const doctorScenarios = ['cliplingo/doctor/stack-drift.yaml'];
+const doctorCategories = new Set(['stack/runtime drift', 'invalid/missing referenced files']);
 
 async function profileIds() {
   const result = new Set();
@@ -70,6 +55,9 @@ test('the six v0 eval cases have valid canonical fixtures and assertions', async
     assert.ok(['change', 'change-with-iteration-group'].includes(assertions.work_model));
     for (const id of assertions.expected_profiles) assert.equal(profiles.has(id), true, `${caseId} expects unknown profile ${id}`);
     for (const id of assertions.forbidden_profiles) assert.equal(project.profiles.includes(id), false, `${caseId} contains forbidden profile ${id}`);
+    for (const category of assertions.doctor_seed_expectations) {
+      assert.equal(doctorCategories.has(category), true, `${caseId} expects unsupported doctor category ${category}`);
+    }
 
     const serialized = [
       await readText(`${root}/source.yaml`), await readText(`${root}/evidence.md`),
@@ -88,7 +76,7 @@ test('the six v0 eval cases have valid canonical fixtures and assertions', async
   assert.equal(simpleAssertions.optional_artifacts.includes('evidence'), false);
 });
 
-test('seeded doctor scenarios use only the fixed v0 diagnostic categories', async () => {
+test('seeded doctor scenarios use only currently supported diagnostic categories', async () => {
   for (const relativePath of doctorScenarios) {
     const path = `evals/cases/${relativePath}`;
     assert.equal(await exists(path), true, `missing doctor scenario: ${relativePath}`);

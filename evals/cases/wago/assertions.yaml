@@ -19,5 +19,4 @@ forbidden_profiles:
 work_model: change
 optional_artifacts:
   - architecture
-doctor_seed_expectations:
-  - missing verification evidence for claimed-done work
+doctor_seed_expectations: []

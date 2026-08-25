@@ -88,6 +88,13 @@ function aggregate(durations) {
   };
 }
 
+function evidenceStatus(incomplete) {
+  const hasIncompleteLifecycle = Object.values(incomplete).some(
+    (value) => value.unmatched_starts > 0 || value.unmatched_ends > 0,
+  );
+  return hasIncompleteLifecycle ? 'partial' : 'complete';
+}
+
 export function calculateFlowMetrics(events, { productionEnvironments = [] } = {}) {
   const production = new Set(productionEnvironments);
   const metrics = {};
@@ -109,7 +116,12 @@ export function calculateFlowMetrics(events, { productionEnvironments = [] } = {
     }
   }
 
-  return { metrics, bottleneck, incomplete };
+  return {
+    metrics,
+    bottleneck,
+    incomplete,
+    evidence_status: evidenceStatus(incomplete),
+  };
 }
 
 export async function flowReport(projectRoot = process.cwd()) {
@@ -119,11 +131,12 @@ export async function flowReport(projectRoot = process.cwd()) {
   }
 
   const events = await readEngineeringEvents(projectRoot);
-  const { metrics, bottleneck, incomplete } = calculateFlowMetrics(events, {
+  const { metrics, bottleneck, incomplete, evidence_status } = calculateFlowMetrics(events, {
     productionEnvironments: canonical.project.delivery?.production_environments ?? [],
   });
   return {
     event_count: events.length,
+    evidence_status,
     metrics,
     bottleneck,
     incomplete,

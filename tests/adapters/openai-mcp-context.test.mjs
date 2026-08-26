@@ -13,10 +13,7 @@ test('OpenAI MCP context tool delegates develop-change semantics to Devland Core
     change,
   );
 
-  const actual = await invokeDevlandContextTool(
-    { projectRoot: process.cwd(), change },
-    { devlandRoot: process.cwd() },
-  );
+  const actual = await invokeDevlandContextTool({ projectRoot: process.cwd(), change });
 
   assert.deepEqual(actual, expected);
   assert.equal(actual.execution.lane, 'deliberate');
@@ -42,6 +39,22 @@ test('OpenAI MCP context tool fixes the workflow boundary to develop-change', as
     '/devland',
     change,
   ]]);
+});
+
+test('OpenAI MCP context tool preserves the Core package root default', async () => {
+  const calls = [];
+  const resolve = async (...args) => {
+    calls.push(args);
+    return { ok: true };
+  };
+
+  await invokeDevlandContextTool({ projectRoot: '/consumer-repo', change }, { resolve });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], 'develop-change');
+  assert.equal(calls[0][1], '/consumer-repo');
+  assert.equal(calls[0][2], undefined);
+  assert.deepEqual(calls[0][3], change);
 });
 
 test('OpenAI MCP descriptor exposes one narrow read-only context capability', () => {

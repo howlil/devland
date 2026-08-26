@@ -13,7 +13,7 @@ The OpenAI adapter may:
 
 The OpenAI adapter must not:
 
-- redefine workflow, policy, profile, risk, or verification semantics;
+- redefine workflow, policy, profile, risk, verification, validation, or diagnostic semantics;
 - persist canonical project facts outside `.devland` canonical state;
 - own repository authentication, provider authorization, CI execution, deployment, or production telemetry;
 - add OpenAI-specific behavior to Devland Core unless that behavior is independently justified as agent-agnostic product semantics.
@@ -22,11 +22,15 @@ The OpenAI adapter must not:
 
 For the same repository state, workflow, and change input, an OpenAI adapter projection must preserve the observable semantic result of the corresponding Devland Core operation.
 
-Adapter tests should therefore compare the adapter result with Core behavior rather than duplicating expected policy logic inside adapter-specific fixtures.
+Adapter tests should therefore compare adapter results with Core behavior rather than duplicating expected policy, validation, or diagnostic logic inside adapter-specific fixtures.
 
-## First vertical slice
+## Read-only MCP foundation
 
-The first supported MCP-facing capability is context resolution for `develop-change`.
+The supported MCP-facing capabilities in this slice are:
+
+- `devland_context`: resolve `develop-change` engineering context;
+- `devland_validate`: validate canonical project and work-state files;
+- `devland_doctor`: run deterministic repository diagnostics supported by Core.
 
 Conceptually:
 
@@ -34,8 +38,10 @@ Conceptually:
 OpenAI runtime
     -> MCP tool input
     -> thin OpenAI adapter
-    -> Devland Core context resolver
+    -> Devland Core operation
     -> structured result
 ```
 
-This slice intentionally excludes repository mutation, shell execution, CI orchestration, deployment, and autonomous coding behavior.
+The adapter must preserve Devland Core's own package-root defaults. A consumer repository path is project input; it must not become the Devland implementation root merely because it is the current working directory.
+
+This slice intentionally excludes repository mutation, shell execution, CI orchestration, deployment, provider SDK ownership, and autonomous coding behavior.

@@ -1,7 +1,15 @@
 # Devland OpenAI MCP adapter
 
-This directory packages thin MCP-facing projections of Devland Core capabilities.
+This directory packages thin, read-only MCP-facing projections of Devland Core capabilities.
 
-The adapter owns protocol translation only. Workflow, profile, policy, risk, and verification semantics remain in Devland Core.
+The adapter owns protocol translation only. Workflow, profile, policy, risk, verification, validation, and diagnostic semantics remain in Devland Core.
 
-The first vertical slice is `context` for the `develop-change` workflow. Its parity requirement is defined in `docs/openai-adapter-contract.md`.
+Current capabilities:
+
+- `devland_context` -> Core `develop-change` context resolution;
+- `devland_validate` -> Core canonical validation;
+- `devland_doctor` -> Core deterministic repository diagnostics.
+
+Each adapter path is required to preserve semantic parity with the corresponding Core operation. See `docs/openai-adapter-contract.md`.
+
+Repository mutation, arbitrary shell execution, CI/deployment orchestration, provider authentication, and autonomous coding remain outside this adapter.

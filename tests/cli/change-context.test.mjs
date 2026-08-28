@@ -36,6 +36,13 @@ test('guided change signals select targeted analysis and affected verification',
   });
 });
 
+test('dependency changes leave the rapid lane so dependency guidance is fully available', () => {
+  const result = classifyChange({ signals: ['dependency-change'] });
+  assert.equal(result.lane, 'guided');
+  assert.deepEqual(result.signals, ['dependency-change']);
+  assert.equal(result.budget.context, 'affected-plus-risk');
+});
+
 test('security boundary changes are deliberate and activate reusable security guidance', async () => {
   const context = await resolveContext(
     'develop-change',
@@ -66,6 +73,17 @@ test('unknown change signals fail explicitly rather than being ignored', () => {
   assert.throws(
     () => classifyChange({ signals: ['mystery-risk'] }),
     /unknown change signal.*mystery-risk/i,
+  );
+});
+
+test('invalid context hydration preferences fail explicitly', async () => {
+  await assert.rejects(
+    () => resolveContext('develop-change', process.cwd(), process.cwd(), { context: { state: 'yes' } }),
+    /context preference state must be boolean/i,
+  );
+  await assert.rejects(
+    () => resolveContext('develop-change', process.cwd(), process.cwd(), { context: { mystery: true } }),
+    /unknown change context preference.*mystery/i,
   );
 });
 

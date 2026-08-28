@@ -29,6 +29,7 @@ test('context resolves lean canonical references, relevant guidance, and request
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const output = JSON.parse(result.stdout);
 
+  assert.equal(output.schema, 'devland.context/v1');
   assert.equal(output.workflow.id, 'develop-change');
   assert.equal(output.workflow.path, 'core/workflows/develop-change.md');
   assert.equal(output.project.path, '.devland/project.yaml');
@@ -53,6 +54,7 @@ test('context resolves Devland core from the installed tool when the target repo
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const output = JSON.parse(result.stdout);
+    assert.equal(output.schema, 'devland.context/v1');
     assert.equal(output.project.path, '.devland/project.yaml');
     assert.equal(output.workflow.path, 'core/workflows/develop-change.md');
     assert.ok(output.policies.some((item) => item.id === 'core.engineering'));

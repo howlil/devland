@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { toPortableContext } from '../src/context-contract.mjs';
 import { doctorProject } from '../src/doctor.mjs';
 import { appendEngineeringEvent, ingestEngineeringEvents } from '../src/events.mjs';
 import { evaluateAdapterParity } from '../src/evals/adapters.mjs';
@@ -65,7 +66,7 @@ async function main() {
       return;
     }
     const change = value ? parseJson(value, 'change descriptor') : null;
-    print(await resolveContext(argument, undefined, undefined, change));
+    print(toPortableContext(await resolveContext(argument, undefined, undefined, change)));
     return;
   }
 

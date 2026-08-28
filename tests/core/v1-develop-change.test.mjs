@@ -21,6 +21,18 @@ test('develop-change executes the v1 rapid feedback loop', async () => {
   assert.match(body, /outcome.*when applicable|when.*outcome|outcome evidence/is);
 });
 
+test('develop-change operationalizes execution lanes as cost ceilings', async () => {
+  const { body } = parseFrontmatter(await readText(workflowPath));
+
+  assert.match(body, /execution\.lane/i);
+  assert.match(body, /ceiling on analysis|ceiling.*reasoning/i);
+  assert.match(body, /rapid.*affected code only/is);
+  assert.match(body, /once requirement.*owner.*implementation path.*risk.*clear.*implement/is);
+  assert.match(body, /guided.*targeted analysis/is);
+  assert.match(body, /deliberate.*expand context/is);
+  assert.match(body, /do not enumerate absent engineering-fact categories/i);
+});
+
 test('develop-change derives implementation from requirement and engineering facts', async () => {
   const { body } = parseFrontmatter(await readText(workflowPath));
 
@@ -46,6 +58,8 @@ test('develop-change keeps modeling and planning conditional rather than default
 test('core engineering policy prefers evidence-driven smallest implementation decisions', async () => {
   const policy = await readText(engineeringPath);
 
+  assert.match(policy, /execution lane.*ceiling/i);
+  assert.match(policy, /do not enumerate categories that are absent or irrelevant/i);
   assert.match(policy, /smallest valuable|smallest independently verifiable/i);
   assert.match(policy, /small batch|batch size/i);
   assert.match(policy, /engineering facts/i);

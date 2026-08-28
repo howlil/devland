@@ -77,6 +77,24 @@ For a change with material risk, pass transient signals without permanently infl
 devland context develop-change '{"signals":["security-boundary"]}'
 ```
 
+Context hydration is proportional to the execution lane. A default/rapid context still validates canonical project and state files, but returns current work state as a reference, keeps secondary policies reference-only, and projects `develop-change` to its compact rapid path. Request state content only when the task depends on current/recent work coordination:
+
+```bash
+devland context develop-change '{"signals":["localized"],"context":{"state":true}}'
+```
+
+Request the complete legacy-style payload only when debugging or broader reasoning actually needs it:
+
+```bash
+devland context develop-change '{"context":{"full":true}}'
+```
+
+Dependency changes should be classified explicitly so they leave the rapid lane and receive the relevant guidance and verification budget:
+
+```bash
+devland context develop-change '{"signals":["dependency-change"]}'
+```
+
 ## Commands
 
 ### Core
@@ -86,7 +104,7 @@ devland context develop-change '{"signals":["security-boundary"]}'
 | `devland init <project-name>` | Create minimal canonical project and work-state files. |
 | `devland migrate` | Migrate supported legacy canonical state to behavioral contract `1`. |
 | `devland validate` | Validate canonical files against schemas and deterministic invariants. |
-| `devland context <workflow> [change-json]` | Resolve the policies, profiles, workflow, and transient risk context relevant to a change. |
+| `devland context <workflow> [change-json]` | Resolve risk-budgeted policies, profiles, workflow guidance, and canonical references relevant to a change. |
 | `devland doctor` | Detect supported repository drift from observable evidence. |
 
 `doctor` currently checks deterministic stack/runtime drift and missing referenced architecture files. Unsupported future diagnostics are not reported as fake partial coverage.
@@ -117,7 +135,7 @@ repo/
     └── runtime/             # optional local evidence; not canonical truth
 ```
 
-`project.yaml` stores facts that should remain useful across tasks. `state.yaml` is intentionally lightweight: it is not a changelog, CI evidence ledger, or replacement for Git history.
+`project.yaml` stores facts that should remain useful across tasks. `state.yaml` is intentionally lightweight: it is not a changelog, CI evidence ledger, or replacement for Git history. The resolver validates it on every context resolution but hydrates its content only when requested.
 
 Repositories explicitly pin the Devland behavioral contract:
 

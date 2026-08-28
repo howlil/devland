@@ -26,6 +26,8 @@ test('generic and AGENTS adapter paths preserve the same resolved engineering se
   assert.deepEqual(generic.semantic, agents.semantic);
   assert.deepEqual(generic.capabilities, agents.capabilities);
   assert.equal(generic.semantic.execution.lane, 'deliberate');
+  assert.equal(generic.semantic.execution.budget.analysis, 'deliberate');
+  assert.equal(generic.semantic.execution.budget.verification, 'strong');
   assert.equal(generic.semantic.profiles.includes('qualities.security-sensitive'), true);
   assert.equal(generic.semantic.canonical.project, '.devland/project.yaml');
   assert.equal(generic.semantic.canonical.state, '.devland/state.yaml');
@@ -51,7 +53,15 @@ test('adapter parity eval reports reproducible context size and semantic parity'
   assert.equal(report.adapters.length, 2);
   assert.equal(report.failures.length, 0);
   assert.equal(report.adapters.every((adapter) => Number.isInteger(adapter.context_bytes) && adapter.context_bytes > 0), true);
-  assert.deepEqual(report.semantic.execution, { lane: 'deliberate', signals: ['security-boundary'] });
+  assert.deepEqual(report.semantic.execution, {
+    lane: 'deliberate',
+    signals: ['security-boundary'],
+    budget: {
+      analysis: 'deliberate',
+      context: 'risk-expanded',
+      verification: 'strong',
+    },
+  });
 });
 
 test('unknown adapter paths fail instead of silently changing semantics', async () => {
@@ -71,4 +81,5 @@ test('devland eval adapters executes the same representative change across two a
   assert.equal(output.status, 'pass');
   assert.deepEqual(output.adapters.map((adapter) => adapter.id).sort(), ['agents-md', 'generic']);
   assert.equal(output.semantic.execution.lane, 'deliberate');
+  assert.equal(output.semantic.execution.budget.context, 'risk-expanded');
 });

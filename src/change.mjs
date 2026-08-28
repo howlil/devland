@@ -18,6 +18,24 @@ const LANE_WEIGHT = new Map([
   ['deliberate', 2],
 ]);
 
+const LANE_BUDGETS = Object.freeze({
+  rapid: Object.freeze({
+    analysis: 'minimal',
+    context: 'affected-only',
+    verification: 'focused',
+  }),
+  guided: Object.freeze({
+    analysis: 'targeted',
+    context: 'affected-plus-risk',
+    verification: 'affected',
+  }),
+  deliberate: Object.freeze({
+    analysis: 'deliberate',
+    context: 'risk-expanded',
+    verification: 'strong',
+  }),
+});
+
 const PROFILE_BY_SIGNAL = new Map([
   ['security-boundary', 'qualities.security-sensitive'],
 ]);
@@ -50,7 +68,7 @@ export function classifyChange(change = null) {
     const candidate = SIGNAL_LANES.get(signal);
     if (LANE_WEIGHT.get(candidate) > LANE_WEIGHT.get(lane)) lane = candidate;
   }
-  return { lane, signals };
+  return { lane, signals, budget: LANE_BUDGETS[lane] };
 }
 
 export function changeProfileIds(change = null) {

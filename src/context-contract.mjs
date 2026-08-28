@@ -6,7 +6,7 @@ export function toPortableContext(context) {
   }
 
   return {
-    schema: DEVLAND_CONTEXT_SCHEMA,
     ...context,
+    schema: DEVLAND_CONTEXT_SCHEMA,
   };
 }

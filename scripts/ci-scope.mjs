@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const PACKAGE_SENSITIVE_EXACT = new Set([
@@ -40,6 +41,6 @@ async function main() {
   process.stdout.write(`package_smoke=${requiresPackageSmoke(paths) ? 'true' : 'false'}\n`);
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === fileURLToPath(new URL(`file://${process.argv[1]}`))) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   await main();
 }

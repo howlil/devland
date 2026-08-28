@@ -34,6 +34,22 @@ New Devland features are frozen until dogfooding demonstrates that the current t
 
 Do not automatically implement every valid audit finding. Classify findings as `now`, `after-feedback`, `later`, or `not-now`, and keep active scope narrow.
 
+## Requirement-to-implementation reasoning
+
+Start from the explicit accepted requirement and observable acceptance criteria.
+
+For a non-trivial change:
+
+1. determine which existing component owns the affected behavior;
+2. extract only implementation-relevant engineering facts: behavior, state, invariants, affected data, boundaries, failure conditions, concurrency/consistency concerns, and compatibility constraints;
+3. choose the smallest implementation style justified by those facts and existing repository patterns;
+4. keep non-trivial design reasoning traceable as `requirement -> engineering fact -> implementation decision`;
+5. map the decision into the existing codebase by preferring reuse, extension of the current owner, a local function/type, then a small local abstraction before considering architecture change.
+
+Do not choose OOP, functional style, event-driven design, a state machine, or another pattern because it is preferred in the abstract. Use the problem shape and repository reality as evidence.
+
+Diagrams and formal models are optional reasoning tools. Create one only when it materially reduces ambiguity, design risk, or implementation complexity; do not make diagram creation a delivery gate.
+
 ## Delivery model
 
 Prefer one coherent vertical slice, one branch, one PR, and one merge.
@@ -43,16 +59,18 @@ Do not split a small outcome into artificial iteration PRs just to keep changes 
 Default loop:
 
 ```text
-outcome
+explicit requirement
   -> acceptance criteria
+  -> engineering facts + existing owner
+  -> smallest justified implementation decision
   -> smallest coherent change
-  -> focused verification
+  -> risk-matched verification
   -> PR / CI
   -> merge
   -> observe
 ```
 
-Use RED -> GREEN -> REFACTOR where executable behavior benefits from TDD. Do not create tests for bookkeeping, prose wording, or documentation ordering unless they are part of a real machine-consumed contract.
+Use RED -> GREEN -> REFACTOR when a deterministic automated test is the cheapest high-signal way to define or protect executable behavior. Do not require TDD for presentation-only changes, styling/layout, static markup, copy, trivial wiring, exploratory implementation, or work better verified at another boundary. Do not create tests for bookkeeping, prose wording, or documentation ordering unless they are part of a real machine-consumed contract.
 
 Avoid new architecture documents, abstractions, adapters, schemas, or process artifacts without concrete pressure. Create durable design documentation only for non-obvious, expensive-to-reverse decisions.
 
@@ -65,6 +83,8 @@ Verification depth must match change risk.
 - **Level 2 — core user-flow behavior:** focused tests plus integration/smoke coverage and normal CI.
 - **Level 3 — persistence/schema/migration/security/concurrency/external side effects:** broader affected suite and regression coverage.
 - **Level 4 — packaging/runtime portability/release-sensitive behavior:** full suite plus explicit Linux/macOS/Windows verification.
+
+Start from the realistic failure the change can introduce. Use the cheapest high-signal verification that detects it, and increase depth only when risk justifies the cost. Avoid duplicated confidence across layers.
 
 Do not require cross-platform CI for every ordinary change. Use the dedicated cross-platform workflow when portability or release confidence is materially relevant.
 

@@ -4,6 +4,7 @@ const SIGNAL_LANES = new Map([
   ['multi-module', 'guided'],
   ['schema-change', 'guided'],
   ['new-api-flow', 'guided'],
+  ['dependency-change', 'guided'],
   ['security-boundary', 'deliberate'],
   ['irreversible-migration', 'deliberate'],
   ['data-loss-risk', 'deliberate'],
@@ -59,6 +60,31 @@ function normalizeSignals(change) {
     if (!SIGNAL_LANES.has(signal)) throw new Error(`Unknown change signal: ${signal}`);
   }
   return signals;
+}
+
+export function contextPreferences(change = null) {
+  if (change === undefined || change === null || change.context === undefined) {
+    return { full: false, state: false };
+  }
+  if (typeof change.context !== 'object' || change.context === null || Array.isArray(change.context)) {
+    throw new Error('Change context preferences must be an object');
+  }
+
+  const allowed = new Set(['full', 'state']);
+  for (const key of Object.keys(change.context)) {
+    if (!allowed.has(key)) throw new Error(`Unknown change context preference: ${key}`);
+  }
+  for (const key of allowed) {
+    if (change.context[key] !== undefined && typeof change.context[key] !== 'boolean') {
+      throw new Error(`Change context preference ${key} must be boolean`);
+    }
+  }
+
+  const full = change.context.full === true;
+  return {
+    full,
+    state: full || change.context.state === true,
+  };
 }
 
 export function classifyChange(change = null) {

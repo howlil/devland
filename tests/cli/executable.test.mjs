@@ -23,7 +23,7 @@ test('validate succeeds for the self-hosted Devland project', () => {
   assert.deepEqual(output.validated.sort(), ['.devland/project.yaml', '.devland/state.yaml']);
 });
 
-test('context resolves canonical files, core policies, applicable profiles, and requested workflow', () => {
+test('context resolves lean canonical references, relevant guidance, and requested workflow', () => {
   const result = run(['context', 'develop-change']);
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
@@ -37,7 +37,8 @@ test('context resolves canonical files, core policies, applicable profiles, and 
   assert.ok(output.policies.some((item) => item.id === 'core.testing'));
   assert.ok(Array.isArray(output.profiles));
   assert.equal(output.project.content.schema, 'devland.project/v0');
-  assert.equal(output.state.content.schema, 'devland.state/v0');
+  assert.equal(output.state.content, undefined);
+  assert.match(output.workflow.content, /rapid path/i);
   assert.match(output.workflow.content, /smallest valuable slice/i);
 });
 

@@ -3,7 +3,11 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import YAML from 'yaml';
-import { changeProfileIds, classifyChange } from './change.mjs';
+import {
+  changeProfileIds,
+  classifyChange,
+  contextPreferences,
+} from './change.mjs';
 
 const DEVLAND_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const PROJECT_PATH = '.devland/project.yaml';
@@ -11,6 +15,11 @@ const STATE_PATH = '.devland/state.yaml';
 const PROJECT_SCHEMA_PATH = 'schemas/project.schema.json';
 const STATE_SCHEMA_PATH = 'schemas/state.schema.json';
 const SUPPORTED_CONTRACTS = new Set(['1']);
+const RAPID_HYDRATED_POLICIES = new Set([
+  'core.engineering',
+  'core.testing',
+  'core.verification',
+]);
 
 async function readText(root, relativePath) {
   return readFile(path.join(root, relativePath), 'utf8');
@@ -32,6 +41,35 @@ function parseFrontmatter(text) {
   return {
     metadata: YAML.parse(normalized.slice(4, end)) ?? {},
     body: normalized.slice(end + 5),
+  };
+}
+
+function markdownSection(body, heading) {
+  const marker = `## ${heading}`;
+  const start = body.indexOf(marker);
+  if (start === -1) return null;
+  const next = body.indexOf('\n## ', start + marker.length);
+  return body.slice(start, next === -1 ? undefined : next).trim();
+}
+
+function entryReference(entry) {
+  return { id: entry.id, path: entry.path };
+}
+
+function hydratePoliciesForExecution(policies, execution, preferences) {
+  if (preferences.full || execution.lane !== 'rapid') return policies;
+  return policies.map((policy) => (
+    RAPID_HYDRATED_POLICIES.has(policy.id) ? policy : entryReference(policy)
+  ));
+}
+
+function hydrateWorkflowForExecution(workflowDocument, execution, preferences) {
+  if (preferences.full || execution.lane !== 'rapid') return workflowDocument.entry;
+  const rapidPath = markdownSection(workflowDocument.entry.content, 'Rapid path');
+  if (!rapidPath) return workflowDocument.entry;
+  return {
+    ...workflowDocument.entry,
+    content: rapidPath,
   };
 }
 
@@ -245,6 +283,7 @@ export async function resolveContext(
   }
 
   const execution = classifyChange(change);
+  const preferences = contextPreferences(change);
   const validation = await validateCanonical(projectRoot, devlandRoot);
   if (!validation.valid) {
     throw new Error(`Canonical context is invalid: ${JSON.stringify(validation.errors)}`);
@@ -254,17 +293,21 @@ export async function resolveContext(
   if (!(await exists(devlandRoot, workflowPath))) throw new Error(`Unknown workflow: ${workflowId}`);
 
   const workflowDocument = await readMarkdownDocument(devlandRoot, workflowPath);
-  const [policies, profiles] = await Promise.all([
+  const [resolvedPolicies, profiles] = await Promise.all([
     resolveCorePolicies(devlandRoot, workflowDocument.metadata.policies),
     resolveProfiles(devlandRoot, validation.project, change),
   ]);
+  const policies = hydratePoliciesForExecution(resolvedPolicies, execution, preferences);
+  const workflow = hydrateWorkflowForExecution(workflowDocument, execution, preferences);
 
   return {
     project: { path: PROJECT_PATH, content: validation.project },
-    state: { path: STATE_PATH, content: validation.state },
+    state: preferences.state
+      ? { path: STATE_PATH, content: validation.state }
+      : { path: STATE_PATH },
     policies,
     profiles,
     execution,
-    workflow: workflowDocument.entry,
+    workflow,
   };
 }

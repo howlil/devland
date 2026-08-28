@@ -21,6 +21,20 @@ Treat `execution.lane` and its budget as a ceiling on analysis, context expansio
 
 Do not enumerate absent engineering-fact categories merely to prove they were considered. A lower-cost path is preferred whenever it provides the same confidence.
 
+## Rapid path
+
+For a `rapid` change, use this compact loop instead of expanding the full procedure unless new evidence raises the lane:
+
+1. Start from the explicit accepted requirement and observable acceptance criteria.
+2. Inspect only the affected repository code, tests, schema, or configuration needed to identify the existing behavior owner and implementation path.
+3. Extract only engineering facts that are materially present. Do not list absent fact categories, create a plan, spec, diagram, or separate decision artifact for obvious existing-pattern reuse.
+4. Implement the **smallest valuable slice** by reusing or extending the existing owner before introducing a local abstraction.
+5. Identify the realistic failure introduced by the change and use the cheapest high-signal verification. Use RED -> GREEN -> REFACTOR only when a deterministic automated test is the cheapest useful mechanism.
+6. Run focused verification, review the actual diff, then run repository-mandatory gates before integration. Keep one logical task on one short-lived branch/PR and keep same-scope fixes on that task.
+7. Integrate promptly when acceptance and required gates are satisfied. Observe production/outcome evidence only when it is actually available.
+
+Current work state is reference-only unless the task depends on current/recent work coordination. Escalate out of the rapid path when ownership is unclear or security, data-loss, compatibility, schema/migration, concurrency, external side-effect, or large-blast-radius risk becomes material.
+
 ## Procedure
 
 1. Load the canonical project model, current work state only when relevant, and only the policies/profiles applicable to the requested change.

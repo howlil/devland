@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { resolvePortableContextFromYaml } from '../../adapters/openai/chatgpt-plugin/resolve-context.mjs';
@@ -65,4 +66,23 @@ test('ChatGPT adapter rejects invalid canonical state through the normal Devland
     }),
     /Canonical context is invalid/,
   );
+});
+
+test('tool-only ChatGPT MCP server is syntactically valid without loading adapter dependencies', () => {
+  const result = spawnSync(process.execPath, [
+    '--check',
+    'adapters/openai/chatgpt-plugin/server.mjs',
+  ], { encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
+test('OpenAI develop-change Skill keeps canonical memory and repository capability boundaries explicit', async () => {
+  const text = await readFile('adapters/openai/skills/develop-change/SKILL.md', 'utf8');
+
+  assert.match(text, /devland\.context\/v1/);
+  assert.match(text, /\.devland\/project\.yaml/);
+  assert.match(text, /\.devland\/state\.yaml/);
+  assert.match(text, /conversation.*transient|transient working context/is);
+  assert.match(text, /repository access and authorization remain external/i);
 });

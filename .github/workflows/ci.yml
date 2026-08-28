@@ -15,24 +15,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           node-version: 22
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
+      - name: Classify CI scope
+        id: scope
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git diff --name-only \
+              "${{ github.event.pull_request.base.sha }}" \
+              "${{ github.event.pull_request.head.sha }}" \
+              | node scripts/ci-scope.mjs >> "$GITHUB_OUTPUT"
+          else
+            echo "package_smoke=true" >> "$GITHUB_OUTPUT"
+          fi
       - run: pnpm test
       - name: Build package archive
+        id: pack
+        if: steps.scope.outputs.package_smoke == 'true'
         run: |
           mkdir -p dist
           pnpm pack --pack-destination dist
-          test -n "$(find dist -maxdepth 1 -name 'devland-*.tgz' -print -quit)"
+          archive="$(find "$GITHUB_WORKSPACE/dist" -maxdepth 1 -name 'devland-*.tgz' -print -quit)"
+          test -n "$archive"
+          echo "archive=$archive" >> "$GITHUB_OUTPUT"
       - name: Prepare install consumer
+        if: steps.scope.outputs.package_smoke == 'true'
         run: |
           mkdir -p "$RUNNER_TEMP/devland-consumer"
           printf '{"name":"devland-smoke-consumer","private":true}\n' > "$RUNNER_TEMP/devland-consumer/package.json"
       - name: Install package archive
-        run: pnpm --dir "$RUNNER_TEMP/devland-consumer" add --ignore-scripts "file:$GITHUB_WORKSPACE/dist/devland-0.2.0.tgz"
+        if: steps.scope.outputs.package_smoke == 'true'
+        run: pnpm --dir "$RUNNER_TEMP/devland-consumer" add --ignore-scripts "file:${{ steps.pack.outputs.archive }}"
       - name: Smoke installed CLI
+        if: steps.scope.outputs.package_smoke == 'true'
         working-directory: ${{ runner.temp }}/devland-consumer
         run: |
           pnpm exec devland init smoke-consumer

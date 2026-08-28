@@ -18,7 +18,8 @@ scope: core
 
 ## Defaults
 
-- Extract only engineering facts that materially affect implementation: required behavior, state, domain invariants, affected data, ownership, external boundaries, failure conditions, concurrency or consistency concerns, and compatibility constraints.
+- Treat the execution lane as a ceiling on reasoning cost. Rapid changes should move directly from clear requirement + affected owner + material facts + realistic risk to implementation; guided and deliberate changes may spend more reasoning only where uncertainty or risk justifies it.
+- Extract only engineering facts that materially affect implementation: required behavior, state, domain invariants, affected data, ownership, external boundaries, failure conditions, concurrency or consistency concerns, and compatibility constraints. Do not enumerate categories that are absent or irrelevant.
 - Decompose accepted work into the **smallest valuable, independently verifiable change** that can provide trustworthy feedback without creating unsafe partial behavior.
 - Keep **small batch** size: changes should remain easy to understand, test, review, integrate, diagnose, and reverse unless the behavior cannot be separated safely.
 - Choose the simplest implementation style justified by the problem shape and repository reality. Prefer an existing architectural pattern when it fits; otherwise use simple procedural logic, functional transformation, object/domain behavior, an explicit state machine, event-driven handling, or a hybrid only where the engineering facts justify it.

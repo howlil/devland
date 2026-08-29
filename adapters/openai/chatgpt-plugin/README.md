@@ -47,6 +47,40 @@ http://localhost:8787/mcp
 
 For ChatGPT development, expose that endpoint over HTTPS and connect the HTTPS `/mcp` URL in ChatGPT developer mode. The adapter intentionally has no widget/UI; the first useful increment is a read-only context tool.
 
+## Production deployment
+
+The repository root `Dockerfile` packages Devland Core and this adapter together because the adapter resolves context through the root `src/` runtime.
+
+Build and smoke-test locally:
+
+```bash
+docker build -t devland-mcp .
+docker run --rm -p 8787:8787 devland-mcp
+curl http://localhost:8787/
+```
+
+The root health response is `Devland context plugin`; the MCP endpoint is `/mcp`.
+
+For MyPaaS, deploy the repository root as a Dockerfile project with:
+
+```text
+repository: https://github.com/howlil/devland
+branch: master
+deploy mode: dockerfile
+base directory: repository root
+app port: 8787
+database: none
+persistent storage: none
+```
+
+After MyPaaS exposes the project over HTTPS, configure ChatGPT with:
+
+```text
+https://<devland-mcp-host>/mcp
+```
+
+Keep repository access outside this service. The deployed MCP remains a stateless, read-only Devland context resolver.
+
 ## Expected ChatGPT flow
 
 ```text

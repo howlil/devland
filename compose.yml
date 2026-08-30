@@ -1,0 +1,21 @@
+services:
+  devland:
+    image: ghcr.io/howlil/devland:latest
+    restart: unless-stopped
+    environment:
+      PORT: "8787"
+    expose:
+      - "8787"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:8787/').then(async (response) => {
+            if (!response.ok || await response.text() !== 'Devland context plugin') process.exit(1)
+          }).catch(() => process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s

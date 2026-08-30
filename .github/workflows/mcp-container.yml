@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - Dockerfile
+      - compose.yml
       - .dockerignore
       - adapters/openai/chatgpt-plugin/**
       - src/**
@@ -18,6 +19,7 @@ on:
       - master
     paths:
       - Dockerfile
+      - compose.yml
       - .dockerignore
       - adapters/openai/chatgpt-plugin/**
       - src/**
@@ -30,15 +32,21 @@ on:
 
 permissions:
   contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/howlil/devland
 
 jobs:
   smoke:
-    name: build and smoke MCP image
+    name: build, smoke, and publish MCP image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - name: Build image
         run: docker build -t devland-mcp:test .
+      - name: Validate Compose deployment contract
+        run: docker compose -f compose.yml config --quiet
       - name: Smoke HTTP and MCP contract
         shell: bash
         run: |
@@ -110,3 +118,19 @@ jobs:
             process.exit(1);
           });
           NODE
+      - name: Log in to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish tested image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker tag devland-mcp:test "$IMAGE:latest"
+          docker tag devland-mcp:test "$IMAGE:sha-$GITHUB_SHA"
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:sha-$GITHUB_SHA"

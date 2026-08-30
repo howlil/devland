@@ -10,6 +10,9 @@ scope: core
 
 - Stay inside the approved current scope and do not implement unrelated future work opportunistically.
 - Start implementation from the explicit accepted requirement. Do not silently replace it with an inferred feature, broader redesign, or preferred framework pattern.
+- The user owns product intent, product scope, observable product semantics, and material architecture decisions. Surface a decision before implementation when resolving it would materially change public contracts, data ownership, permission or security boundaries, service boundaries, consistency models, or infrastructure architecture.
+- The agent may make local implementation decisions autonomously when they preserve the accepted behavior, approved scope, and existing system boundaries.
+- Do not turn implementation convenience, best-practice preference, optimization, framework preference, hypothetical scale, or future flexibility into new product scope.
 - Determine which existing component owns the affected behavior before introducing a new owner, boundary, abstraction, or subsystem.
 - For non-trivial design decisions, preserve a concise reasoning chain: **requirement -> engineering fact -> implementation decision**.
 - Do not claim work, checks, repository actions, or outcomes that were not actually performed.

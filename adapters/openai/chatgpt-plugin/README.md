@@ -51,29 +51,37 @@ For ChatGPT development, expose that endpoint over HTTPS and connect the HTTPS `
 
 The repository root `Dockerfile` packages Devland Core and this adapter together because the adapter resolves context through the root `src/` runtime.
 
-Build and smoke-test locally:
+Every qualifying push to `master` builds that image, exercises the root HTTP response plus MCP `initialize`, `tools/list`, and `resolve_context`, and only then publishes the same tested image as:
 
-```bash
-docker build -t devland-mcp .
-docker run --rm -p 8787:8787 devland-mcp
-curl http://localhost:8787/
+```text
+ghcr.io/howlil/devland:latest
+ghcr.io/howlil/devland:sha-<git-sha>
 ```
 
-The root health response is `Devland context plugin`; the MCP endpoint is `/mcp`.
+GitHub Container Registry packages are private on first publication. For anonymous pulls from MyPaaS, make the `devland` container package public once after its first successful publish, or configure registry authentication on the host.
 
-For MyPaaS, deploy the repository root as a Dockerfile project with:
+For MyPaaS, use the repository `compose.yml` rather than Dockerfile/image deployment so the platform uses its Compose readiness path:
 
 ```text
 repository: https://github.com/howlil/devland
 branch: master
-deploy mode: dockerfile
-base directory: repository root
+deploy mode: compose
+compose file: compose.yml
+main service: devland
 app port: 8787
 database: none
 persistent storage: none
 ```
 
-After MyPaaS exposes the project over HTTPS, configure ChatGPT with:
+The Compose service pulls `ghcr.io/howlil/devland:latest`, listens on container port `8787`, and declares an HTTP healthcheck. MyPaaS owns the host-port allocation and public reverse-proxy route; do not add a fixed host port to `compose.yml`.
+
+After MyPaaS exposes the project over HTTPS, verify:
+
+```bash
+curl https://<devland-mcp-host>/
+```
+
+The expected response is `Devland context plugin`. Configure ChatGPT with:
 
 ```text
 https://<devland-mcp-host>/mcp

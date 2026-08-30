@@ -71,6 +71,15 @@ test('core engineering policy prefers evidence-driven smallest implementation de
   assert.match(policy, /diagrams.*optional|optional reasoning tools/is);
 });
 
+test('core engineering policy preserves product authority while keeping local agent autonomy', async () => {
+  const policy = await readText(engineeringPath);
+
+  assert.match(policy, /user owns product intent.*product scope.*observable product semantics.*material architecture/is);
+  assert.match(policy, /surface a decision before implementation.*public contracts.*data ownership.*security boundaries.*service boundaries.*consistency models.*infrastructure architecture/is);
+  assert.match(policy, /agent may make local implementation decisions autonomously.*accepted behavior.*approved scope.*existing system boundaries/is);
+  assert.match(policy, /do not turn implementation convenience.*best-practice preference.*optimization.*framework preference.*hypothetical scale.*future flexibility.*new product scope/is);
+});
+
 test('testing and verification choose confidence from realistic delivery risk', async () => {
   const testing = await readText(testingPath);
   const verification = await readText(verificationPath);

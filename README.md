@@ -27,24 +27,7 @@ Devland is **not** a coding agent, CI/CD engine, deployment platform, project-ma
 
 Devland requires **Node.js 22 or newer**. pnpm is the canonical package manager and is pinned through `package.json`.
 
-### Install a tagged version from GitHub
-
-After a tagged release exists, install that exact version directly from GitHub:
-
-```bash
-corepack enable
-pnpm add --global github:howlil/devland#v0.2.0
-```
-
-This keeps installation pinned to a reviewed release tag without requiring public npm publication.
-
-Tagged GitHub Releases also contain the packed package archive. Download the `.tgz` asset and install it with:
-
-```bash
-pnpm add --global ./devland-0.2.0.tgz
-```
-
-### Install from source
+For active development or dogfooding, install from source:
 
 ```bash
 git clone https://github.com/howlil/devland.git
@@ -54,11 +37,22 @@ pnpm install --frozen-lockfile
 pnpm link --global
 ```
 
-Then use `devland` from another repository.
+For a pinned release, install a tagged GitHub version:
 
-> **Windows / WinGet:** WinGet publication is planned after Devland has a verified Windows executable artifact. The current JavaScript package requires Node.js and is intentionally not presented as a fake portable WinGet executable.
+```bash
+corepack enable
+pnpm add --global github:howlil/devland#v0.2.0
+```
+
+Tagged GitHub Releases also contain a `.tgz` package that can be installed with `pnpm add --global ./devland-<version>.tgz`.
+
+Devland is not currently published as a public npm package. WinGet publication is deferred until Devland has a verified Windows executable artifact.
+
+For prerequisites, Windows notes, updating a source checkout, local MCP development, Docker testing, and troubleshooting the global link, see [`docs/local-usage.md`](docs/local-usage.md).
 
 ## Quick start
+
+Use Devland from the repository that should consume its engineering context:
 
 ```bash
 cd /path/to/project
@@ -69,7 +63,7 @@ devland doctor
 devland context develop-change
 ```
 
-`devland init <project-name>` creates minimal canonical state and refuses to overwrite an existing `.devland/project.yaml` or `.devland/state.yaml`.
+`devland init <project-name>` creates `.devland/project.yaml` and `.devland/state.yaml` and refuses to overwrite existing canonical files.
 
 For a change with material risk, pass transient signals without permanently inflating project state:
 
@@ -77,23 +71,19 @@ For a change with material risk, pass transient signals without permanently infl
 devland context develop-change '{"signals":["security-boundary"]}'
 ```
 
-Context hydration is proportional to the execution lane. A default/rapid context still validates canonical project and state files, but returns current work state as a reference, keeps secondary policies reference-only, and projects `develop-change` to its compact rapid path. Request state content only when the task depends on current/recent work coordination:
+Request current work state only when the task depends on it:
 
 ```bash
 devland context develop-change '{"signals":["localized"],"context":{"state":true}}'
 ```
 
-Request the complete legacy-style payload only when debugging or broader reasoning actually needs it:
+Request the complete context payload only for debugging or broader reasoning:
 
 ```bash
 devland context develop-change '{"context":{"full":true}}'
 ```
 
-Dependency changes should be classified explicitly so they leave the rapid lane and receive the relevant guidance and verification budget:
-
-```bash
-devland context develop-change '{"signals":["dependency-change"]}'
-```
+The detailed local workflow, including Command Prompt quoting on Windows and running the MCP server on `localhost:8787`, is documented in [`docs/local-usage.md`](docs/local-usage.md).
 
 ## Commands
 
@@ -197,6 +187,8 @@ pnpm test
 ```
 
 The codebase intentionally avoids speculative abstractions and unnecessary dependencies. For behavior changes, add the smallest useful regression coverage at the level that protects observable behavior.
+
+For local CLI and MCP development procedures, use [`docs/local-usage.md`](docs/local-usage.md).
 
 ## Contributing
 

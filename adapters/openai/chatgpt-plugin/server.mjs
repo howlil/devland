@@ -22,9 +22,9 @@ const workSchema = z.object({
   scope: z.object({
     allowed: z.array(z.string().min(1)).optional(),
     excluded: z.array(z.string().min(1)).optional(),
-  }).optional(),
+  }).strict().optional(),
   expected_outcome: z.string().min(1).optional(),
-}).optional();
+}).strict().optional();
 
 function createDevlandServer() {
   const server = new McpServer(

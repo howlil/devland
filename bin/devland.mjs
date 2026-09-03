@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { readFile } from 'node:fs/promises';
 import { toPortableContext } from '../src/context-contract.mjs';
 import { doctorProject } from '../src/doctor.mjs';
 import { appendEngineeringEvent, ingestEngineeringEvents } from '../src/events.mjs';
@@ -26,8 +27,50 @@ function parseJson(value, label) {
   }
 }
 
+async function readJsonFile(filePath, label) {
+  let value;
+  try {
+    value = await readFile(filePath, 'utf8');
+  } catch (error) {
+    throw new Error(`Cannot read ${label} file ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  return parseJson(value, label);
+}
+
+function parseContextArgs(args) {
+  if (args.length === 0) {
+    throw new Error('Usage: devland context <workflow> [change-json] [--work <work-json-file>]');
+  }
+
+  let index = 0;
+  let workflow = 'develop-change';
+  if (args[index] !== '--work') {
+    workflow = args[index];
+    index += 1;
+  }
+
+  let change = null;
+  if (index < args.length && args[index] !== '--work') {
+    change = parseJson(args[index], 'change descriptor');
+    index += 1;
+  }
+
+  let workPath = null;
+  while (index < args.length) {
+    if (args[index] !== '--work' || !args[index + 1]) {
+      throw new Error('Usage: devland context <workflow> [change-json] [--work <work-json-file>]');
+    }
+    if (workPath) throw new Error('devland context accepts only one --work file');
+    workPath = args[index + 1];
+    index += 2;
+  }
+
+  return { workflow, change, workPath };
+}
+
 async function main() {
-  const [command, argument, value] = process.argv.slice(2);
+  const argv = process.argv.slice(2);
+  const [command, argument, value] = argv;
 
   if (command === 'init') {
     if (!argument) {
@@ -61,12 +104,9 @@ async function main() {
   }
 
   if (command === 'context') {
-    if (!argument) {
-      fail('Usage: devland context <workflow> [change-json]');
-      return;
-    }
-    const change = value ? parseJson(value, 'change descriptor') : null;
-    print(toPortableContext(await resolveContext(argument, undefined, undefined, change)));
+    const { workflow, change, workPath } = parseContextArgs(argv.slice(1));
+    const work = workPath ? await readJsonFile(workPath, 'work envelope') : null;
+    print(toPortableContext(await resolveContext(workflow, undefined, undefined, change, work)));
     return;
   }
 
@@ -105,7 +145,7 @@ async function main() {
     return;
   }
 
-  fail('Usage: devland <init <project-name>|migrate|validate|doctor|flow|context <workflow> [change-json]|eval adapters [change-json]|event append <json>|ingest github <json>>');
+  fail('Usage: devland <init <project-name>|migrate|validate|doctor|flow|context <workflow> [change-json] [--work <work-json-file>]|eval adapters [change-json]|event append <json>|ingest github <json>>');
 }
 
 main().catch((error) => {

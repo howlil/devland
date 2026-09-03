@@ -7,6 +7,20 @@ import { toPortableContext } from '../../src/context-contract.mjs';
 import { resolveContext } from '../../src/runtime.mjs';
 import { createValidator } from '../helpers/schema.mjs';
 
+const transientWork = {
+  id: 'work-transient-context',
+  intent: 'Keep requirement intent attached to the resolved agent context',
+  acceptance: [
+    'resolved context includes the supplied transient work envelope',
+    'canonical state remains unchanged and independently hydrated',
+  ],
+  scope: {
+    allowed: ['src/runtime.mjs', 'adapters/openai/chatgpt-plugin'],
+    excluded: ['task management'],
+  },
+  expected_outcome: 'agents receive stable intent and acceptance boundaries without persistent task state',
+};
+
 async function canonicalYaml() {
   const [projectYaml, stateYaml] = await Promise.all([
     readFile('.devland/project.yaml', 'utf8'),
@@ -15,7 +29,23 @@ async function canonicalYaml() {
   return { projectYaml, stateYaml };
 }
 
-test('portable context conforms to devland.context/v1', async () => {
+test('transient work schema accepts the minimal contract and rejects empty acceptance', async () => {
+  const validate = await createValidator('schemas/work.schema.json');
+
+  assert.equal(validate({
+    id: 'work-123',
+    intent: 'Fix session expiry handling',
+    acceptance: ['expired sessions are rejected'],
+  }), true, JSON.stringify(validate.errors));
+
+  assert.equal(validate({
+    id: 'work-123',
+    intent: 'Fix session expiry handling',
+    acceptance: [],
+  }), false);
+});
+
+test('portable context conforms to devland.context/v1 without requiring transient work', async () => {
   const context = toPortableContext(await resolveContext(
     'develop-change',
     process.cwd(),
@@ -30,6 +60,35 @@ test('portable context conforms to devland.context/v1', async () => {
   assert.equal(context.project.path, '.devland/project.yaml');
   assert.equal(context.state.path, '.devland/state.yaml');
   assert.equal(context.state.content, undefined);
+  assert.equal(context.work, undefined);
+});
+
+test('portable context carries validated transient work without hydrating canonical state', async () => {
+  const context = toPortableContext(await resolveContext(
+    'develop-change',
+    process.cwd(),
+    process.cwd(),
+    { signals: ['localized'] },
+    transientWork,
+  ));
+  const validate = await createValidator('schemas/context.schema.json');
+
+  assert.equal(validate(context), true, JSON.stringify(validate.errors));
+  assert.deepEqual(context.work, transientWork);
+  assert.equal(context.state.content, undefined);
+});
+
+test('runtime rejects an invalid transient work envelope', async () => {
+  await assert.rejects(
+    resolveContext(
+      'develop-change',
+      process.cwd(),
+      process.cwd(),
+      { signals: ['localized'] },
+      { id: 'work-invalid', intent: 'Missing acceptance', acceptance: [] },
+    ),
+    /Transient work is invalid/,
+  );
 });
 
 test('ChatGPT canonical-YAML adapter resolves the same semantics as the local runtime', async () => {
@@ -44,15 +103,18 @@ test('ChatGPT canonical-YAML adapter resolves the same semantics as the local ru
     process.cwd(),
     process.cwd(),
     change,
+    transientWork,
   ));
   const chatgpt = await resolvePortableContextFromYaml({
     projectYaml,
     stateYaml,
     workflow: 'develop-change',
     change,
+    work: transientWork,
   });
 
   assert.deepEqual(chatgpt, local);
+  assert.deepEqual(chatgpt.work, transientWork);
   assert.equal(chatgpt.state.content.schema, 'devland.state/v0');
 });
 

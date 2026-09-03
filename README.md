@@ -71,6 +71,32 @@ For a change with material risk, pass transient signals without permanently infl
 devland context develop-change '{"signals":["security-boundary"]}'
 ```
 
+For an active request that must keep intent and acceptance boundaries attached to the resolved agent context, create a transient JSON envelope:
+
+```json
+{
+  "id": "work-123",
+  "intent": "Fix session expiry handling",
+  "acceptance": [
+    "expired sessions are rejected",
+    "valid sessions continue to work"
+  ],
+  "scope": {
+    "allowed": ["src/auth"],
+    "excluded": ["oauth redesign"]
+  },
+  "expected_outcome": "session expiry behaves consistently"
+}
+```
+
+Then resolve it without persisting the work envelope into canonical state:
+
+```bash
+devland context --work ./work.json
+```
+
+`develop-change` is the default workflow for this flag-first form. Existing calls such as `devland context develop-change` and `devland context develop-change '<change-json>'` remain valid.
+
 Request current work state only when the task depends on it:
 
 ```bash
@@ -94,7 +120,7 @@ The detailed local workflow, including Command Prompt quoting on Windows and run
 | `devland init <project-name>` | Create minimal canonical project and work-state files. |
 | `devland migrate` | Migrate supported legacy canonical state to behavioral contract `1`. |
 | `devland validate` | Validate canonical files against schemas and deterministic invariants. |
-| `devland context <workflow> [change-json]` | Resolve risk-budgeted policies, profiles, workflow guidance, and canonical references relevant to a change. |
+| `devland context <workflow> [change-json] [--work <work-json-file>]` | Resolve risk-budgeted policies, profiles, workflow guidance, canonical references, and an optional transient work contract relevant to a change. |
 | `devland doctor` | Detect supported repository drift from observable evidence. |
 
 `doctor` currently checks deterministic stack/runtime drift and missing referenced architecture files. Unsupported future diagnostics are not reported as fake partial coverage.
@@ -127,6 +153,16 @@ repo/
 
 `project.yaml` stores facts that should remain useful across tasks. `state.yaml` is intentionally lightweight: it is not a changelog, CI evidence ledger, or replacement for Git history. The resolver validates it on every context resolution but hydrates its content only when requested.
 
+The optional `work` envelope is deliberately outside that canonical surface. It describes what the current agent invocation is trying to accomplish: `id`, outcome-oriented `intent`, observable `acceptance`, optional `scope`, and optional `expected_outcome`. Devland validates and returns it in `devland.context/v1` but does not persist it to `.devland/state.yaml`.
+
+In short:
+
+```text
+project.yaml -> durable repository semantics
+state.yaml   -> lightweight coordination when persistence is useful
+work         -> transient intent and acceptance boundaries for the active change
+```
+
 Repositories explicitly pin the Devland behavioral contract:
 
 ```yaml
@@ -139,19 +175,19 @@ Package versions, schema identifiers, and `devland.contract` are separate compat
 ## How it works
 
 ```text
-.devland/project.yaml + repository facts
-                  |
-                  v
-           context resolver
-             /         \
-            v           v
-   relevant guidance   doctor
-            |
-            v
-      AI runtime / human
-            |
-            v
-        repository
+transient work + .devland/project.yaml + optional current state
+                         |
+                         v
+                  context resolver
+                    /         \
+                   v           v
+          relevant guidance   doctor
+                   |
+                   v
+             AI runtime / human
+                   |
+                   v
+               repository
 ```
 
 Devland owns engineering semantics, not external-system access. Authentication, repository mutation, CI execution, deployment, and production telemetry remain the responsibility of the surrounding runtime or platform.
@@ -176,7 +212,7 @@ outcome
   -> observe
 ```
 
-Verification should match blast radius. Ordinary pull requests use the fast Ubuntu CI path. Explicit cross-platform verification is reserved for packaging, portability, and release-sensitive changes.
+Acceptance criteria describe observable behavior; they are not a requirement to create a separate acceptance-test suite. Verification should match the realistic failure mode and use the cheapest trustworthy boundary that supplies the needed confidence. Ordinary pull requests use the fast Ubuntu CI path. Explicit cross-platform verification is reserved for packaging, portability, and release-sensitive changes.
 
 ## Development
 

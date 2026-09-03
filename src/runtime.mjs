@@ -14,6 +14,7 @@ const PROJECT_PATH = '.devland/project.yaml';
 const STATE_PATH = '.devland/state.yaml';
 const PROJECT_SCHEMA_PATH = 'schemas/project.schema.json';
 const STATE_SCHEMA_PATH = 'schemas/state.schema.json';
+const WORK_SCHEMA_PATH = 'schemas/work.schema.json';
 const SUPPORTED_CONTRACTS = new Set(['1']);
 const RAPID_HYDRATED_POLICIES = new Set([
   'core.engineering',
@@ -128,6 +129,17 @@ function validateStateSemantics(state) {
   }
 
   return errors;
+}
+
+async function validateWorkEnvelope(work, devlandRoot) {
+  if (work == null) return null;
+
+  const schema = await readJson(devlandRoot, WORK_SCHEMA_PATH);
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  const validate = ajv.compile(schema);
+  if (validate(work)) return work;
+
+  throw new Error(`Transient work is invalid: ${JSON.stringify(formatAjvErrors('work', validate.errors))}`);
 }
 
 export async function validateCanonical(projectRoot = process.cwd(), devlandRoot = DEVLAND_ROOT) {
@@ -277,6 +289,7 @@ export async function resolveContext(
   projectRoot = process.cwd(),
   devlandRoot = DEVLAND_ROOT,
   change = null,
+  work = null,
 ) {
   if (!/^[a-z0-9][a-z0-9-]*$/.test(workflowId ?? '')) {
     throw new Error(`Unknown workflow: ${workflowId ?? ''}`);
@@ -288,6 +301,7 @@ export async function resolveContext(
   if (!validation.valid) {
     throw new Error(`Canonical context is invalid: ${JSON.stringify(validation.errors)}`);
   }
+  const validatedWork = await validateWorkEnvelope(work, devlandRoot);
 
   const workflowPath = `core/workflows/${workflowId}.md`;
   if (!(await exists(devlandRoot, workflowPath))) throw new Error(`Unknown workflow: ${workflowId}`);
@@ -305,6 +319,7 @@ export async function resolveContext(
     state: preferences.state
       ? { path: STATE_PATH, content: validation.state }
       : { path: STATE_PATH },
+    ...(validatedWork ? { work: validatedWork } : {}),
     policies,
     profiles,
     execution,

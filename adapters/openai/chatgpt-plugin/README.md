@@ -1,14 +1,17 @@
 # ChatGPT Plugin Adapter
 
-This adapter exposes Devland's resolved engineering context to ChatGPT as a tool-only MCP plugin. It does not own repository access, GitHub authentication, project facts, or work state.
+This adapter exposes Devland's resolved engineering context to ChatGPT as a tool-only MCP plugin. It does not own repository access, GitHub authentication, project facts, or persistent work state.
 
 ## Ownership
 
 - Devland Core owns global engineering rules, workflows, profiles, risk classification, and context resolution.
 - `.devland/project.yaml` is canonical durable project memory.
-- `.devland/state.yaml` is canonical lightweight current-work memory.
+- `.devland/state.yaml` is canonical lightweight current-work coordination when persistence is useful.
+- `work` is a transient envelope for the active request: intent, observable acceptance boundaries, optional scope, and optional expected outcome.
 - ChatGPT conversation memory is transient context/cache and must not replace either canonical file.
 - Repository source/configuration remains evidence of the current implementation.
+
+The transient `work` envelope is never written to `.devland/state.yaml` by this adapter or the resolver.
 
 ## Tool
 
@@ -17,7 +20,10 @@ This adapter exposes Devland's resolved engineering context to ChatGPT as a tool
 - `project_yaml`: the repository's `.devland/project.yaml` contents;
 - `state_yaml`: the repository's `.devland/state.yaml` contents;
 - `workflow`: defaults to `develop-change`;
-- `change`: optional transient signals and context hydration preferences.
+- `change`: optional transient signals and context hydration preferences;
+- `work`: optional transient work envelope containing `id`, `intent`, non-empty `acceptance`, optional `scope`, and optional `expected_outcome`.
+
+Acceptance entries describe observable conditions for the requested behavior. They do not require a separate acceptance-test suite; the resolved engineering policy still selects the cheapest high-signal verification for the actual failure mode.
 
 The tool returns the same Devland resolver semantics as the CLI, wrapped as `devland.context/v1`.
 
@@ -94,6 +100,8 @@ Keep repository access outside this service. The deployed MCP remains a stateles
 ```text
 user requirement
       ↓
+transient work envelope (intent + acceptance + scope)
+      ↓
 repository connector/tool reads .devland/project.yaml + .devland/state.yaml
       ↓
 Devland resolve_context
@@ -103,4 +111,4 @@ devland.context/v1
 ChatGPT performs engineering work using separate repository capabilities
 ```
 
-Re-resolve context for a new change or when canonical project/work state changed materially. Within one unchanged task, the resolved context may remain in the conversation as transient working context.
+Re-resolve context for a new change, a material change to the transient work contract, or when canonical project/work state changed materially. Within one unchanged task, the resolved context may remain in the conversation as transient working context.

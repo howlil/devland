@@ -16,6 +16,7 @@ export async function resolvePortableContextFromYaml({
   stateYaml,
   workflow = 'develop-change',
   change = null,
+  work = null,
 }) {
   const project = canonicalYaml(projectYaml, 'projectYaml');
   const state = canonicalYaml(stateYaml, 'stateYaml');
@@ -29,7 +30,7 @@ export async function resolvePortableContextFromYaml({
       writeFile(path.join(canonicalRoot, 'state.yaml'), state, 'utf8'),
     ]);
 
-    const resolved = await resolveContext(workflow, projectRoot, undefined, change);
+    const resolved = await resolveContext(workflow, projectRoot, undefined, change, work);
     return toPortableContext(resolved);
   } finally {
     await rm(projectRoot, { recursive: true, force: true });

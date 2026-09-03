@@ -42,25 +42,33 @@ pnpm devland -- validate
 
 1. Keep one coherent outcome per pull request.
 2. Inspect the existing behavior before changing it.
-3. Add regression coverage for behavior changes when a deterministic test is meaningful.
-4. Prefer the smallest implementation that solves the observed problem.
-5. Do not add process artifacts solely to document that work happened; Git and the pull request already provide history.
-6. Update public documentation when the user-facing contract changes.
+3. Protect critical deterministic behavior first. Strongly prefer RED -> GREEN -> REFACTOR for core/domain behavior and critical functions when a focused automated regression is the cheapest trustworthy proof; do not force TDD on every change.
+4. Choose the verification boundary from the realistic failure mode. Integration tests are first-class when component interaction is the risk; there is no unit-test-first requirement.
+5. Add E2E coverage only when a critical journey needs confidence that cheaper unit, component, contract, process, or integration checks cannot provide.
+6. Prefer the smallest implementation that solves the observed problem.
+7. Do not add process artifacts solely to document that work happened; Git and the pull request already provide history.
+8. Update public documentation when the user-facing contract changes.
 
 ## Verification
 
-Verification should match risk:
+Verification should match risk and cost:
 
-- documentation or metadata: inspect the rendered/parsed result and run relevant checks;
-- localized logic: focused tests plus normal CI;
-- core workflows, schemas, migrations, persistence, security, or side effects: broader affected regression coverage;
-- packaging or platform-sensitive behavior: explicit Linux/macOS/Windows verification.
+- documentation, copy, styling, or low-risk metadata: inspect the relevant result and run only useful checks;
+- localized deterministic behavior: focused regression verification, using TDD when it is the cheapest strong proof;
+- component interaction: deterministic integration verification may be the primary or only automated proof;
+- core workflows, schemas, migrations, persistence, security, data integrity, concurrency, or side effects: broader affected risk-specific verification;
+- packaging or platform-sensitive behavior: explicit package or Linux/macOS/Windows verification;
+- critical cross-system journeys: targeted E2E only when lower-cost boundaries cannot supply the required confidence.
 
 The normal repository gate is:
 
 ```bash
 pnpm test
 ```
+
+Keep the default CI path fast and deterministic. Package-install smoke, container verification, cross-platform matrices, browser E2E, remote dependencies, large fixtures, and similar expensive checks should be triggered only by the affected boundary, material risk, or release semantics rather than paid on every pull request.
+
+Do not add duplicated tests merely to fill unit/integration/E2E layers or satisfy a blanket coverage percentage. Each added check should protect a distinct realistic failure mode.
 
 ## Pull requests
 

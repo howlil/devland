@@ -7,10 +7,12 @@ on:
       - compose.yml
       - .dockerignore
       - adapters/openai/chatgpt-plugin/**
-      - src/**
-      - core/**
-      - profiles/**
-      - schemas/**
+      - src/runtime.mjs
+      - src/change.mjs
+      - src/context-contract.mjs
+      - schemas/project.schema.json
+      - schemas/state.schema.json
+      - schemas/work.schema.json
       - package.json
       - pnpm-lock.yaml
       - .github/workflows/mcp-container.yml
@@ -22,10 +24,12 @@ on:
       - compose.yml
       - .dockerignore
       - adapters/openai/chatgpt-plugin/**
-      - src/**
-      - core/**
-      - profiles/**
-      - schemas/**
+      - src/runtime.mjs
+      - src/change.mjs
+      - src/context-contract.mjs
+      - schemas/project.schema.json
+      - schemas/state.schema.json
+      - schemas/work.schema.json
       - package.json
       - pnpm-lock.yaml
       - .github/workflows/mcp-container.yml

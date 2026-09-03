@@ -11,12 +11,7 @@ const PACKAGE_SENSITIVE_EXACT = new Set([
 
 const PACKAGE_SENSITIVE_PREFIXES = [
   'bin/',
-  'src/',
-  'core/',
-  'profiles/',
-  'schemas/',
   'templates/',
-  'adapters/',
 ];
 
 export function requiresPackageSmoke(paths) {

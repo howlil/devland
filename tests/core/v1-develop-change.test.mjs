@@ -14,6 +14,11 @@ test('develop-change executes the v1 rapid feedback loop', async () => {
 
   assert.match(body, /smallest valuable slice/i);
   assert.match(body, /RED\s*(?:->|→)\s*GREEN\s*(?:->|→)\s*REFACTOR/i);
+  assert.match(body, /critical.*deterministic|deterministic.*critical/is);
+  assert.match(body, /do not force TDD|not every change.*TDD|TDD.*not.*every change/is);
+  assert.match(body, /integration.*first-class|integration.*whenever.*boundary|boundary.*integration/is);
+  assert.match(body, /end-to-end|E2E/i);
+  assert.match(body, /unique confidence|cheaper boundary|critical journey/is);
   assert.match(body, /repeat|next independently useful increment|next smallest valuable slice/i);
   assert.match(body, /fastest relevant|focused verification|fast feedback/i);
   assert.match(body, /integrate.*as soon|integrate.*promptly|frequent integration/is);
@@ -80,19 +85,32 @@ test('core engineering policy preserves product authority while keeping local ag
   assert.match(policy, /do not turn implementation convenience.*best-practice preference.*optimization.*framework preference.*hypothetical scale.*future flexibility.*new product scope/is);
 });
 
-test('testing and verification choose confidence from realistic delivery risk', async () => {
+test('testing policy protects critical behavior without universal TDD ceremony', async () => {
   const testing = await readText(testingPath);
-  const verification = await readText(verificationPath);
 
   assert.match(testing, /realistic regression|failure risk/i);
+  assert.match(testing, /critical.*behavior|critical.*function|domain.*invariant/is);
   assert.match(testing, /cheapest high-signal/i);
   assert.match(testing, /RED\s*(?:->|→)\s*GREEN\s*(?:->|→)\s*REFACTOR/i);
-  assert.match(testing, /do not require TDD/i);
+  assert.match(testing, /strongly prefer|strong default/i);
+  assert.match(testing, /do not require TDD|not every.*TDD|TDD.*not.*universal/is);
+  assert.match(testing, /integration.*first-class|integration.*whenever.*boundary/is);
+  assert.match(testing, /end-to-end|E2E/i);
+  assert.match(testing, /unique confidence|cheaper boundary/is);
   assert.match(testing, /avoid duplicated confidence/i);
+});
+
+test('verification policy keeps default integration gates fast and risk-triggered', async () => {
+  const verification = await readText(verificationPath);
 
   assert.match(verification, /impact and likelihood/i);
   assert.match(verification, /cheapest high-signal/i);
   assert.match(verification, /increase verification depth only when risk/i);
+  assert.match(verification, /integration.*first-class|integration.*realistic failure boundary/is);
+  assert.match(verification, /default.*(?:CI|integration gate).*fast|fast.*default.*(?:CI|integration gate)/is);
+  assert.match(verification, /expensive.*risk|risk.*expensive|affected scope.*expensive|release.*expensive/is);
+  assert.match(verification, /end-to-end|E2E/i);
+  assert.match(verification, /not.*default.*gate|default.*gate.*not/is);
   assert.match(verification, /do not duplicate the same confidence/i);
 });
 

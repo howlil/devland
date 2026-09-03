@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { copyFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -39,8 +39,33 @@ test('context resolves lean canonical references, relevant guidance, and request
   assert.ok(Array.isArray(output.profiles));
   assert.equal(output.project.content.schema, 'devland.project/v0');
   assert.equal(output.state.content, undefined);
+  assert.equal(output.work, undefined);
   assert.match(output.workflow.content, /rapid path/i);
   assert.match(output.workflow.content, /smallest valuable slice/i);
+});
+
+test('context accepts a transient work file without requiring canonical state hydration', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'devland-work-'));
+  const workPath = join(root, 'work.json');
+  try {
+    await writeFile(workPath, JSON.stringify({
+      id: 'work-cli',
+      intent: 'Carry transient requirement intent through the CLI',
+      acceptance: ['resolved context contains the supplied work envelope'],
+      scope: { allowed: ['src/runtime.mjs'] },
+    }), 'utf8');
+
+    const result = run(['context', '--work', workPath]);
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.workflow.id, 'develop-change');
+    assert.equal(output.work.id, 'work-cli');
+    assert.deepEqual(output.work.acceptance, ['resolved context contains the supplied work envelope']);
+    assert.equal(output.state.content, undefined);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test('context resolves Devland core from the installed tool when the target repo only has canonical state', async () => {

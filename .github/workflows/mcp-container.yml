@@ -10,9 +10,11 @@ on:
       - src/runtime.mjs
       - src/change.mjs
       - src/context-contract.mjs
+      - src/verification.mjs
       - schemas/project.schema.json
       - schemas/state.schema.json
       - schemas/work.schema.json
+      - schemas/verification.schema.json
       - package.json
       - pnpm-lock.yaml
       - .github/workflows/mcp-container.yml
@@ -27,9 +29,11 @@ on:
       - src/runtime.mjs
       - src/change.mjs
       - src/context-contract.mjs
+      - src/verification.mjs
       - schemas/project.schema.json
       - schemas/state.schema.json
       - schemas/work.schema.json
+      - schemas/verification.schema.json
       - package.json
       - pnpm-lock.yaml
       - .github/workflows/mcp-container.yml
@@ -112,10 +116,23 @@ jobs:
                 project_yaml: fs.readFileSync('.devland/project.yaml', 'utf8'),
                 state_yaml: fs.readFileSync('.devland/state.yaml', 'utf8'),
                 workflow: 'develop-change',
+                change: {
+                  signals: ['localized'],
+                  verification: {
+                    criticality: 'behavioral',
+                    failure_modes: ['MCP drops verification selection'],
+                    boundary: 'integration',
+                    cost: 'moderate',
+                  },
+                },
               },
             });
-            if (!called?.structuredContent?.context) {
+            const context = called?.structuredContent?.context;
+            if (!context) {
               throw new Error(`resolve_context returned no structured context: ${JSON.stringify(called)}`);
+            }
+            if (context.verification?.boundary !== 'integration' || context.verification?.diagnostics?.length !== 0) {
+              throw new Error(`verification selection did not survive MCP resolution: ${JSON.stringify(context.verification)}`);
             }
           })().catch((error) => {
             console.error(error);

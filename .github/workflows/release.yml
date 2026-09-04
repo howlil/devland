@@ -8,6 +8,10 @@ on:
 
 permissions:
   contents: write
+  packages: write
+
+env:
+  MCP_IMAGE: ghcr.io/howlil/devland
 
 jobs:
   preflight:
@@ -89,12 +93,138 @@ jobs:
           name: devland-package
           path: dist/*.tgz
 
+  mcp-image:
+    name: verify and publish versioned MCP image
+    needs:
+      - preflight
+      - verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build release image
+        run: docker build -t devland-mcp:release .
+      - name: Validate Compose deployment contract
+        run: docker compose -f compose.yml config --quiet
+      - name: Smoke release MCP contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          cid="$(docker run -d -p 127.0.0.1:8787:8787 devland-mcp:release)"
+          trap 'docker rm -f "$cid" >/dev/null 2>&1 || true' EXIT
+
+          ready=0
+          for _ in $(seq 1 30); do
+            if [[ "$(curl -fsS http://127.0.0.1:8787/ 2>/dev/null || true)" == "Devland context plugin" ]]; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+          node <<'NODE'
+          const fs = require('node:fs');
+          const endpoint = 'http://127.0.0.1:8787/mcp';
+          const headers = {
+            'content-type': 'application/json',
+            accept: 'application/json, text/event-stream',
+            'mcp-protocol-version': '2025-03-26',
+          };
+
+          async function rpc(id, method, params = {}) {
+            const response = await fetch(endpoint, {
+              method: 'POST', headers,
+              body: JSON.stringify({ jsonrpc: '2.0', id, method, params }),
+            });
+            const text = await response.text();
+            if (!response.ok) throw new Error(`${method} returned ${response.status}: ${text}`);
+            const body = JSON.parse(text);
+            if (body.error) throw new Error(`${method} failed: ${JSON.stringify(body.error)}`);
+            return body.result;
+          }
+
+          (async () => {
+            const projectYaml = fs.readFileSync('.devland/project.yaml', 'utf8');
+            const stateYaml = fs.readFileSync('.devland/state.yaml', 'utf8');
+            await rpc(1, 'initialize', {
+              protocolVersion: '2025-03-26', capabilities: {},
+              clientInfo: { name: 'devland-release', version: '1.0.0' },
+            });
+            const listed = await rpc(2, 'tools/list');
+            const names = (listed?.tools ?? []).map((tool) => tool.name).sort();
+            const expected = ['doctor', 'flow_report', 'resolve_context'];
+            if (JSON.stringify(names) !== JSON.stringify(expected)) {
+              throw new Error(`unexpected MCP registry: ${JSON.stringify(names)}`);
+            }
+
+            const resolved = await rpc(3, 'tools/call', {
+              name: 'resolve_context',
+              arguments: {
+                project_yaml: projectYaml,
+                state_yaml: stateYaml,
+                workflow: 'develop-change',
+                change: { signals: ['localized'] },
+              },
+            });
+            if (!resolved?.structuredContent?.context) {
+              throw new Error(`resolve_context returned no context: ${JSON.stringify(resolved)}`);
+            }
+
+            const doctor = await rpc(4, 'tools/call', {
+              name: 'doctor',
+              arguments: {
+                project_yaml: projectYaml,
+                state_yaml: stateYaml,
+                repository_files: [
+                  { path: 'package.json', content: fs.readFileSync('package.json', 'utf8') },
+                  { path: 'src/runtime.mjs', content: fs.readFileSync('src/runtime.mjs', 'utf8') },
+                ],
+              },
+            });
+            if (!doctor?.structuredContent?.doctor?.status) {
+              throw new Error(`doctor returned no structured result: ${JSON.stringify(doctor)}`);
+            }
+
+            const flow = await rpc(5, 'tools/call', {
+              name: 'flow_report',
+              arguments: {
+                project_yaml: projectYaml,
+                state_yaml: stateYaml,
+                events_ndjson: '',
+              },
+            });
+            if (flow?.structuredContent?.report?.evidence_status !== 'empty') {
+              throw new Error(`empty flow evidence was not preserved: ${JSON.stringify(flow)}`);
+            }
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish verified version image
+        env:
+          TAG: ${{ needs.preflight.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker tag devland-mcp:release "$MCP_IMAGE:$TAG"
+          docker tag devland-mcp:release "$MCP_IMAGE:sha-$GITHUB_SHA"
+          docker push "$MCP_IMAGE:$TAG"
+          docker push "$MCP_IMAGE:sha-$GITHUB_SHA"
+
   release:
     name: publish GitHub release
     needs:
       - preflight
       - verify
       - artifact
+      - mcp-image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

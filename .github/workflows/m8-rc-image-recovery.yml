@@ -1,0 +1,213 @@
+name: M8 RC image recovery
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/workflows/m8-rc-image-recovery.yml
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/howlil/devland
+  RELEASE_TAG: v0.3.0-rc.1
+  RELEASE_SHA: cab22b5b92c91e9ba352ce4ad74b6655a5a37d17
+
+jobs:
+  recover:
+    name: publish exact tagged MCP image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact released source
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          path: release-src
+          fetch-depth: 0
+
+      - name: Verify release tag identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git -C release-src rev-parse HEAD)"
+          test "$actual" = "$RELEASE_SHA" || {
+            echo "Expected $RELEASE_TAG to resolve to $RELEASE_SHA, got $actual" >&2
+            exit 1
+          }
+
+      - name: Build exact released image
+        run: docker build -t devland-mcp:recovery release-src
+
+      - name: Validate released Compose contract
+        run: docker compose -f release-src/compose.yml config --quiet
+
+      - name: Smoke image
+        shell: bash
+        working-directory: release-src
+        run: |
+          set -euo pipefail
+          cid="$(docker run -d -p 127.0.0.1:8787:8787 devland-mcp:recovery)"
+          trap 'docker rm -f "$cid" >/dev/null 2>&1 || true' EXIT
+
+          ready=0
+          for _ in $(seq 1 30); do
+            if [[ "$(curl -fsS http://127.0.0.1:8787/ 2>/dev/null || true)" == "Devland context plugin" ]]; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+          node <<'NODE'
+          const fs = require('node:fs');
+          const endpoint = 'http://127.0.0.1:8787/mcp';
+          const headers = {
+            'content-type': 'application/json',
+            accept: 'application/json, text/event-stream',
+            'mcp-protocol-version': '2025-03-26',
+          };
+
+          async function rpc(id, method, params = {}) {
+            const response = await fetch(endpoint, {
+              method: 'POST', headers,
+              body: JSON.stringify({ jsonrpc: '2.0', id, method, params }),
+            });
+            const text = await response.text();
+            if (!response.ok) throw new Error(`${method} returned ${response.status}: ${text}`);
+            const body = JSON.parse(text);
+            if (body.error) throw new Error(`${method} failed: ${JSON.stringify(body.error)}`);
+            return body.result;
+          }
+
+          (async () => {
+            const projectYaml = fs.readFileSync('.devland/project.yaml', 'utf8');
+            const stateYaml = fs.readFileSync('.devland/state.yaml', 'utf8');
+            await rpc(1, 'initialize', {
+              protocolVersion: '2025-03-26', capabilities: {},
+              clientInfo: { name: 'devland-rc-recovery', version: '1.0.0' },
+            });
+            const listed = await rpc(2, 'tools/list');
+            const names = (listed?.tools ?? []).map((tool) => tool.name).sort();
+            const expected = ['doctor', 'flow_report', 'resolve_context'];
+            if (JSON.stringify(names) !== JSON.stringify(expected)) {
+              throw new Error(`unexpected MCP registry: ${JSON.stringify(names)}`);
+            }
+
+            const resolved = await rpc(3, 'tools/call', {
+              name: 'resolve_context',
+              arguments: {
+                project_yaml: projectYaml,
+                state_yaml: stateYaml,
+                workflow: 'develop-change',
+                change: { signals: ['localized'] },
+              },
+            });
+            if (!resolved?.structuredContent?.context) throw new Error('resolve_context returned no context');
+
+            const doctor = await rpc(4, 'tools/call', {
+              name: 'doctor',
+              arguments: {
+                project_yaml: projectYaml,
+                state_yaml: stateYaml,
+                repository_files: [
+                  { path: 'package.json', content: fs.readFileSync('package.json', 'utf8') },
+                  { path: 'src/runtime.mjs', content: fs.readFileSync('src/runtime.mjs', 'utf8') },
+                ],
+              },
+            });
+            if (!doctor?.structuredContent?.doctor?.status) throw new Error('doctor returned no status');
+
+            const flow = await rpc(5, 'tools/call', {
+              name: 'flow_report',
+              arguments: {
+                project_yaml: projectYaml,
+                state_yaml: stateYaml,
+                events_ndjson: '',
+              },
+            });
+            if (flow?.structuredContent?.report?.evidence_status !== 'empty') {
+              throw new Error('flow_report did not preserve empty evidence');
+            }
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish recovered version image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker tag devland-mcp:recovery "$IMAGE:$RELEASE_TAG"
+          docker tag devland-mcp:recovery "$IMAGE:sha-$RELEASE_SHA"
+          docker push "$IMAGE:$RELEASE_TAG"
+          docker push "$IMAGE:sha-$RELEASE_SHA"
+
+      - name: Pull published version image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker image rm "$IMAGE:$RELEASE_TAG" >/dev/null 2>&1 || true
+          docker pull "$IMAGE:$RELEASE_TAG"
+          docker image inspect "$IMAGE:$RELEASE_TAG" >/dev/null
+
+      - name: Smoke published version image
+        shell: bash
+        run: |
+          set -euo pipefail
+          cid="$(docker run -d -p 127.0.0.1:8788:8787 "$IMAGE:$RELEASE_TAG")"
+          trap 'docker rm -f "$cid" >/dev/null 2>&1 || true' EXIT
+
+          ready=0
+          for _ in $(seq 1 30); do
+            if [[ "$(curl -fsS http://127.0.0.1:8788/ 2>/dev/null || true)" == "Devland context plugin" ]]; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+          PORT=8788 node <<'NODE'
+          const endpoint = `http://127.0.0.1:${process.env.PORT}/mcp`;
+          const headers = {
+            'content-type': 'application/json',
+            accept: 'application/json, text/event-stream',
+            'mcp-protocol-version': '2025-03-26',
+          };
+          async function rpc(id, method, params = {}) {
+            const response = await fetch(endpoint, {
+              method: 'POST', headers,
+              body: JSON.stringify({ jsonrpc: '2.0', id, method, params }),
+            });
+            const body = JSON.parse(await response.text());
+            if (!response.ok || body.error) throw new Error(JSON.stringify(body));
+            return body.result;
+          }
+          (async () => {
+            await rpc(1, 'initialize', {
+              protocolVersion: '2025-03-26', capabilities: {},
+              clientInfo: { name: 'devland-rc-pull-smoke', version: '1.0.0' },
+            });
+            const listed = await rpc(2, 'tools/list');
+            const names = (listed?.tools ?? []).map((tool) => tool.name).sort();
+            const expected = ['doctor', 'flow_report', 'resolve_context'];
+            if (JSON.stringify(names) !== JSON.stringify(expected)) {
+              throw new Error(`unexpected pulled registry: ${JSON.stringify(names)}`);
+            }
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE

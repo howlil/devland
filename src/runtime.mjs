@@ -8,6 +8,7 @@ import {
   classifyChange,
   contextPreferences,
 } from './change.mjs';
+import { verificationDiagnostics } from './verification.mjs';
 
 const DEVLAND_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const PROJECT_PATH = '.devland/project.yaml';
@@ -15,6 +16,7 @@ const STATE_PATH = '.devland/state.yaml';
 const PROJECT_SCHEMA_PATH = 'schemas/project.schema.json';
 const STATE_SCHEMA_PATH = 'schemas/state.schema.json';
 const WORK_SCHEMA_PATH = 'schemas/work.schema.json';
+const VERIFICATION_SCHEMA_PATH = 'schemas/verification.schema.json';
 const SUPPORTED_CONTRACTS = new Set(['1']);
 const RAPID_HYDRATED_POLICIES = new Set([
   'core.engineering',
@@ -140,6 +142,18 @@ async function validateWorkEnvelope(work, devlandRoot) {
   if (validate(work)) return work;
 
   throw new Error(`Transient work is invalid: ${JSON.stringify(formatAjvErrors('work', validate.errors))}`);
+}
+
+async function validateVerificationSelection(change, devlandRoot) {
+  const verification = change?.verification;
+  if (verification == null) return null;
+
+  const schema = await readJson(devlandRoot, VERIFICATION_SCHEMA_PATH);
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  const validate = ajv.compile(schema);
+  if (validate(verification)) return verification;
+
+  throw new Error(`Verification selection is invalid: ${JSON.stringify(formatAjvErrors('change.verification', validate.errors))}`);
 }
 
 export async function validateCanonical(projectRoot = process.cwd(), devlandRoot = DEVLAND_ROOT) {
@@ -301,7 +315,16 @@ export async function resolveContext(
   if (!validation.valid) {
     throw new Error(`Canonical context is invalid: ${JSON.stringify(validation.errors)}`);
   }
-  const validatedWork = await validateWorkEnvelope(work, devlandRoot);
+  const [validatedWork, validatedVerification] = await Promise.all([
+    validateWorkEnvelope(work, devlandRoot),
+    validateVerificationSelection(change, devlandRoot),
+  ]);
+  const verification = validatedVerification
+    ? {
+      ...validatedVerification,
+      diagnostics: verificationDiagnostics(validatedVerification, execution),
+    }
+    : null;
 
   const workflowPath = `core/workflows/${workflowId}.md`;
   if (!(await exists(devlandRoot, workflowPath))) throw new Error(`Unknown workflow: ${workflowId}`);
@@ -320,6 +343,7 @@ export async function resolveContext(
       ? { path: STATE_PATH, content: validation.state }
       : { path: STATE_PATH },
     ...(validatedWork ? { work: validatedWork } : {}),
+    ...(verification ? { verification } : {}),
     policies,
     profiles,
     execution,

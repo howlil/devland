@@ -21,6 +21,14 @@ const transientWork = {
   expected_outcome: 'agents receive stable intent and acceptance boundaries without persistent task state',
 };
 
+const transientVerification = {
+  criticality: 'behavioral',
+  failure_modes: ['adapter drops transient verification intent'],
+  boundary: 'integration',
+  cost: 'moderate',
+  reason: 'adapter parity is the affected interaction boundary',
+};
+
 async function canonicalYaml() {
   const [projectYaml, stateYaml] = await Promise.all([
     readFile('.devland/project.yaml', 'utf8'),
@@ -45,12 +53,12 @@ test('transient work schema accepts the minimal contract and rejects empty accep
   }), false);
 });
 
-test('portable context conforms to devland.context/v1 without requiring transient work', async () => {
+test('portable context conforms to devland.context/v1 with optional verification selection', async () => {
   const context = toPortableContext(await resolveContext(
     'develop-change',
     process.cwd(),
     process.cwd(),
-    { signals: ['localized'] },
+    { signals: ['localized'], verification: transientVerification },
   ));
   const validate = await createValidator('schemas/context.schema.json');
 
@@ -61,6 +69,10 @@ test('portable context conforms to devland.context/v1 without requiring transien
   assert.equal(context.state.path, '.devland/state.yaml');
   assert.equal(context.state.content, undefined);
   assert.equal(context.work, undefined);
+  assert.deepEqual(context.verification, {
+    ...transientVerification,
+    diagnostics: [],
+  });
 });
 
 test('portable context carries validated transient work without hydrating canonical state', async () => {
@@ -96,6 +108,7 @@ test('ChatGPT canonical-YAML adapter resolves the same semantics as the local ru
   const change = {
     signals: ['localized', 'reversible'],
     context: { state: true },
+    verification: transientVerification,
   };
 
   const local = toPortableContext(await resolveContext(
@@ -115,6 +128,10 @@ test('ChatGPT canonical-YAML adapter resolves the same semantics as the local ru
 
   assert.deepEqual(chatgpt, local);
   assert.deepEqual(chatgpt.work, transientWork);
+  assert.deepEqual(chatgpt.verification, {
+    ...transientVerification,
+    diagnostics: [],
+  });
   assert.equal(chatgpt.state.content.schema, 'devland.state/v0');
 });
 

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Devland Verification Selection v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["criticality", "failure_modes", "boundary", "cost"],
+  "properties": {
+    "criticality": {
+      "enum": ["critical", "behavioral", "peripheral"]
+    },
+    "failure_modes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "boundary": {
+      "enum": ["static", "function", "component", "integration", "contract", "process", "journey", "release"]
+    },
+    "cost": {
+      "enum": ["cheap", "moderate", "expensive"]
+    },
+    "reason": { "type": "string", "minLength": 1 }
+  }
+}

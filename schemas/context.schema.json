@@ -40,6 +40,7 @@
       ]
     },
     "work": { "$ref": "#/$defs/work" },
+    "verification": { "$ref": "#/$defs/verification" },
     "policies": {
       "type": "array",
       "items": { "$ref": "#/$defs/guidanceEntry" }
@@ -134,6 +135,43 @@
           }
         },
         "expected_outcome": { "type": "string", "minLength": 1 }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["criticality", "failure_modes", "boundary", "cost", "diagnostics"],
+      "properties": {
+        "criticality": {
+          "enum": ["critical", "behavioral", "peripheral"]
+        },
+        "failure_modes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "boundary": {
+          "enum": ["static", "function", "component", "integration", "contract", "process", "journey", "release"]
+        },
+        "cost": {
+          "enum": ["cheap", "moderate", "expensive"]
+        },
+        "reason": { "type": "string", "minLength": 1 },
+        "diagnostics": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/verificationDiagnostic" }
+        }
+      }
+    },
+    "verificationDiagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "severity": { "const": "warning" },
+        "message": { "type": "string", "minLength": 1 }
       }
     }
   }

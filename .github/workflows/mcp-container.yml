@@ -11,11 +11,17 @@ on:
       - src/change.mjs
       - src/context-contract.mjs
       - src/verification.mjs
+      - src/doctor.mjs
+      - src/metrics.mjs
+      - src/events.mjs
+      - src/correlation.mjs
+      - src/facts/repository.mjs
       - schemas/project.schema.json
       - schemas/state.schema.json
       - schemas/work.schema.json
       - schemas/context.schema.json
       - schemas/verification.schema.json
+      - schemas/engineering-event.schema.json
       - package.json
       - pnpm-lock.yaml
       - .github/workflows/mcp-container.yml
@@ -31,11 +37,17 @@ on:
       - src/change.mjs
       - src/context-contract.mjs
       - src/verification.mjs
+      - src/doctor.mjs
+      - src/metrics.mjs
+      - src/events.mjs
+      - src/correlation.mjs
+      - src/facts/repository.mjs
       - schemas/project.schema.json
       - schemas/state.schema.json
       - schemas/work.schema.json
       - schemas/context.schema.json
       - schemas/verification.schema.json
+      - schemas/engineering-event.schema.json
       - package.json
       - pnpm-lock.yaml
       - .github/workflows/mcp-container.yml
@@ -98,6 +110,9 @@ jobs:
           }
 
           (async () => {
+            const projectYaml = fs.readFileSync('.devland/project.yaml', 'utf8');
+            const stateYaml = fs.readFileSync('.devland/state.yaml', 'utf8');
+
             const initialized = await rpc(1, 'initialize', {
               protocolVersion: '2025-03-26',
               capabilities: {},
@@ -108,15 +123,17 @@ jobs:
             }
 
             const listed = await rpc(2, 'tools/list');
-            if (!listed?.tools?.some((tool) => tool.name === 'resolve_context')) {
-              throw new Error('resolve_context was not exposed');
+            const toolNames = (listed?.tools ?? []).map((tool) => tool.name).sort();
+            const expected = ['doctor', 'flow_report', 'resolve_context'];
+            if (JSON.stringify(toolNames) !== JSON.stringify(expected)) {
+              throw new Error(`unexpected tool registry: ${JSON.stringify(toolNames)}`);
             }
 
-            const called = await rpc(3, 'tools/call', {
+            const resolved = await rpc(3, 'tools/call', {
               name: 'resolve_context',
               arguments: {
-                project_yaml: fs.readFileSync('.devland/project.yaml', 'utf8'),
-                state_yaml: fs.readFileSync('.devland/state.yaml', 'utf8'),
+                project_yaml: projectYaml,
+                state_yaml: stateYaml,
                 workflow: 'develop-change',
                 change: {
                   signals: ['localized'],
@@ -129,12 +146,36 @@ jobs:
                 },
               },
             });
-            const context = called?.structuredContent?.context;
-            if (!context) {
-              throw new Error(`resolve_context returned no structured context: ${JSON.stringify(called)}`);
+            const context = resolved?.structuredContent?.context;
+            if (!context || context.verification?.boundary !== 'integration' || context.verification?.diagnostics?.length !== 0) {
+              throw new Error(`resolve_context parity failed: ${JSON.stringify(resolved)}`);
             }
-            if (context.verification?.boundary !== 'integration' || context.verification?.diagnostics?.length !== 0) {
-              throw new Error(`verification selection did not survive MCP resolution: ${JSON.stringify(context.verification)}`);
+
+            const flow = await rpc(4, 'tools/call', {
+              name: 'flow_report',
+              arguments: {
+                project_yaml: projectYaml,
+                state_yaml: stateYaml,
+                events_ndjson: '',
+              },
+            });
+            if (flow?.structuredContent?.report?.evidence_status !== 'empty') {
+              throw new Error(`empty flow evidence was not preserved: ${JSON.stringify(flow)}`);
+            }
+
+            const doctor = await rpc(5, 'tools/call', {
+              name: 'doctor',
+              arguments: {
+                project_yaml: projectYaml,
+                state_yaml: stateYaml,
+                repository_files: [
+                  { path: 'package.json', content: fs.readFileSync('package.json', 'utf8') },
+                  { path: 'src/runtime.mjs', content: fs.readFileSync('src/runtime.mjs', 'utf8') },
+                ],
+              },
+            });
+            if (!doctor?.structuredContent?.doctor?.status) {
+              throw new Error(`doctor returned no structured result: ${JSON.stringify(doctor)}`);
             }
           })().catch((error) => {
             console.error(error);

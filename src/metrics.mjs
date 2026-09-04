@@ -22,7 +22,6 @@ const OUTCOME_METRIC_SPECS = [
   { name: 'idea_to_outcome', start: 'work.accepted', end: 'outcome.observed', keys: ['work_id'], sourceScoped: false },
 ];
 
-const ALL_METRIC_SPECS = [...METRIC_SPECS, ...DELIVERY_METRIC_SPECS, ...OUTCOME_METRIC_SPECS];
 const FLOW_EVIDENCE_SPECS = [...METRIC_SPECS, ...DELIVERY_METRIC_SPECS];
 const OUTCOME_METRIC_NAMES = new Set(OUTCOME_METRIC_SPECS.map((spec) => spec.name));
 

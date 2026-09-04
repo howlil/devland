@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
-import { createValidator } from '../helpers/schema.mjs';
+import Ajv2020 from 'ajv/dist/2020.js';
 
 const expectedTypes = [
   'work.accepted',
@@ -19,6 +19,12 @@ const expectedTypes = [
   'outcome.observed',
 ];
 
+async function eventValidator() {
+  const schema = JSON.parse(await readFile('schemas/engineering-event.schema.json', 'utf8'));
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  return ajv.compile(schema);
+}
+
 test('engineering event schema defines the normalized v1 evidence vocabulary', async () => {
   const schema = JSON.parse(await readFile('schemas/engineering-event.schema.json', 'utf8'));
 
@@ -32,7 +38,7 @@ test('engineering event schema defines the normalized v1 evidence vocabulary', a
 });
 
 test('change.merged requires an explicit change identity while keeping linkage enrichment additive', async () => {
-  const validate = await createValidator('schemas/engineering-event.schema.json');
+  const validate = await eventValidator();
 
   assert.equal(validate({
     schema: 'devland.event/v1',

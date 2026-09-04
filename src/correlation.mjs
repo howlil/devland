@@ -1,3 +1,5 @@
+const OUTCOME_STATUSES = new Set(['positive', 'neutral', 'negative', 'unknown']);
+
 function addToSetMap(map, key, value) {
   if (!key || !value) return;
   const values = map.get(key) ?? new Set();
@@ -5,8 +7,32 @@ function addToSetMap(map, key, value) {
   map.set(key, values);
 }
 
+function addToArrayMap(map, key, value) {
+  if (!key) return;
+  const values = map.get(key) ?? [];
+  values.push(value);
+  map.set(key, values);
+}
+
 function sorted(values) {
   return [...values].sort();
+}
+
+function timestamp(event) {
+  const value = Date.parse(event.occurred_at);
+  if (!Number.isFinite(value)) throw new Error(`Invalid engineering event timestamp: ${event.id ?? 'unknown'}`);
+  return value;
+}
+
+function outcomeStatus(event) {
+  const value = event?.data?.status;
+  return OUTCOME_STATUSES.has(value) ? value : 'unknown';
+}
+
+function byTimestampThenId(left, right) {
+  const delta = timestamp(left) - timestamp(right);
+  if (delta !== 0) return delta;
+  return String(left.id ?? '').localeCompare(String(right.id ?? ''));
 }
 
 function diagnosticKey(diagnostic) {
@@ -14,11 +40,14 @@ function diagnosticKey(diagnostic) {
     diagnostic.code,
     diagnostic.change_id ?? '',
     diagnostic.deployment_id ?? '',
+    diagnostic.work_id ?? '',
     diagnostic.work_ids ?? [],
+    diagnostic.statuses ?? [],
   ]);
 }
 
-export function correlateDeliveryEvents(events) {
+export function correlateDeliveryEvents(events, { productionEnvironments = [] } = {}) {
+  const production = new Set(productionEnvironments);
   const commitChanges = new Map();
   const workIdsByChange = new Map();
   const committedChanges = new Set();
@@ -98,6 +127,62 @@ export function correlateDeliveryEvents(events) {
       .map((event) => event.change_id),
   );
 
+  const productionDeploymentsByWork = new Map();
+  const outcomesByWork = new Map();
+  for (const event of resolvedEvents) {
+    if (event.type === 'deployment.succeeded' && event.work_id && production.has(event.environment)) {
+      addToArrayMap(productionDeploymentsByWork, event.work_id, event);
+    }
+    if (event.type === 'outcome.observed' && event.work_id) {
+      addToArrayMap(outcomesByWork, event.work_id, event);
+    }
+  }
+
+  const outcomeCoverage = {
+    linked: 0,
+    total: productionDeploymentsByWork.size,
+  };
+  const outcomeStatusSummary = {
+    positive: 0,
+    neutral: 0,
+    negative: 0,
+    unknown: 0,
+  };
+
+  for (const [workId, deployments] of productionDeploymentsByWork) {
+    const orderedDeployments = [...deployments].sort(byTimestampThenId);
+    const orderedOutcomes = [...(outcomesByWork.get(workId) ?? [])].sort(byTimestampThenId);
+
+    if (orderedOutcomes.length === 0) {
+      outcomeStatusSummary.unknown += 1;
+      continue;
+    }
+
+    outcomeCoverage.linked += 1;
+    const latestStatus = outcomeStatus(orderedOutcomes.at(-1));
+    outcomeStatusSummary[latestStatus] += 1;
+
+    const knownStatuses = new Set(
+      orderedOutcomes
+        .map((event) => outcomeStatus(event))
+        .filter((status) => status !== 'unknown'),
+    );
+    if (knownStatuses.size > 1) {
+      diagnostics.push({
+        code: 'conflicting_outcome_status',
+        work_id: workId,
+        statuses: sorted(knownStatuses),
+      });
+    }
+
+    if (timestamp(orderedOutcomes[0]) < timestamp(orderedDeployments[0])) {
+      diagnostics.push({
+        code: 'outcome_precedes_production',
+        work_id: workId,
+      });
+    }
+  }
+
   const tracesByWork = new Map();
   for (const [changeId, workId] of workByChange) {
     const trace = tracesByWork.get(workId) ?? {
@@ -105,6 +190,7 @@ export function correlateDeliveryEvents(events) {
       change_ids: new Set(),
       commit_shas: new Set(),
       deployment_ids: new Set(),
+      outcomes: [],
     };
     trace.change_ids.add(changeId);
     tracesByWork.set(workId, trace);
@@ -116,15 +202,31 @@ export function correlateDeliveryEvents(events) {
     if (event.change_id) trace.change_ids.add(event.change_id);
     if (event.commit_sha) trace.commit_shas.add(event.commit_sha);
     if (event.deployment_id) trace.deployment_ids.add(event.deployment_id);
+    if (event.type === 'outcome.observed') {
+      trace.outcomes.push({
+        id: event.id,
+        status: outcomeStatus(event),
+        occurred_at: event.occurred_at,
+        source: event.source,
+      });
+    }
   }
 
   const traces = [...tracesByWork.values()]
-    .map((trace) => ({
-      work_id: trace.work_id,
-      change_ids: sorted(trace.change_ids),
-      commit_shas: sorted(trace.commit_shas),
-      deployment_ids: sorted(trace.deployment_ids),
-    }))
+    .map((trace) => {
+      const outcomeEvidence = [...trace.outcomes].sort((left, right) => {
+        const delta = Date.parse(left.occurred_at) - Date.parse(right.occurred_at);
+        if (delta !== 0) return delta;
+        return String(left.id).localeCompare(String(right.id));
+      });
+      return {
+        work_id: trace.work_id,
+        change_ids: sorted(trace.change_ids),
+        commit_shas: sorted(trace.commit_shas),
+        deployment_ids: sorted(trace.deployment_ids),
+        ...(outcomeEvidence.length > 0 ? { outcomes: outcomeEvidence } : {}),
+      };
+    })
     .sort((a, b) => a.work_id.localeCompare(b.work_id));
 
   const uniqueDiagnostics = [...new Map(diagnostics.map((diagnostic) => [diagnosticKey(diagnostic), diagnostic])).values()]
@@ -147,6 +249,10 @@ export function correlateDeliveryEvents(events) {
         linked: [...mergedChanges].filter((changeId) => deployedChanges.has(changeId)).length,
         total: mergedChanges.size,
       },
+    },
+    outcomes: {
+      coverage: outcomeCoverage,
+      status: outcomeStatusSummary,
     },
   };
 }

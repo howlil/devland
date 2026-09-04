@@ -1,22 +1,35 @@
 # ChatGPT Plugin Adapter
 
-This adapter exposes Devland's resolved engineering context to ChatGPT as a tool-only MCP plugin. It does not own repository access, GitHub authentication, project facts, or persistent work state.
+This adapter exposes Devland's read-only engineering context and feedback surface to ChatGPT through MCP. It does not own repository access, GitHub authentication, project facts, event collection, or persistent work state.
 
 ## Ownership
 
-- Devland Core owns global engineering rules, workflows, profiles, risk classification, verification semantics, and context resolution.
+- Devland Core owns global engineering rules, workflows, profiles, risk classification, verification semantics, deterministic repository diagnostics, delivery/outcome correlation, and flow reporting.
 - `.devland/project.yaml` is canonical durable project memory.
 - `.devland/state.yaml` is canonical lightweight current-work coordination when persistence is useful.
 - `work` is a transient envelope for the active request: intent, observable acceptance boundaries, optional scope, and optional expected outcome.
 - `change.verification` is an optional transient selection describing realistic failure modes, criticality, chosen verification boundary, relative cost, and optional rationale.
-- ChatGPT conversation memory is transient context/cache and must not replace either canonical file.
-- Repository source/configuration remains evidence of the current implementation.
+- normalized engineering events remain externally collected evidence; `flow_report` only consumes supplied NDJSON.
+- repository files remain external evidence; `doctor` only consumes a supplied transient snapshot.
+- ChatGPT conversation memory is transient context/cache and must not replace canonical files.
 
-The transient `work` envelope and verification selection are never written to `.devland/state.yaml` by this adapter or the resolver.
+The transient work envelope, verification selection, repository snapshot, and event evidence are never written to `.devland/state.yaml` by this adapter.
 
-## Tool
+## MCP tools
 
-`resolve_context` accepts:
+The server intentionally exposes exactly three read-only tools:
+
+```text
+resolve_context
+doctor
+flow_report
+```
+
+It does not expose repository mutation, Git, shell, test execution, CI, deployment, issue-management, telemetry collection, or agent-orchestration tools.
+
+### `resolve_context`
+
+Accepts:
 
 - `project_yaml`: the repository's `.devland/project.yaml` contents;
 - `state_yaml`: the repository's `.devland/state.yaml` contents;
@@ -36,13 +49,21 @@ A verification selection uses compact semantics only:
 }
 ```
 
-The resolver validates that descriptor and may attach non-blocking diagnostics when it obviously conflicts with change risk, such as `security-boundary` paired with static-only verification. Devland does not return test commands or create a verification matrix.
+The resolver validates that descriptor and may attach non-blocking diagnostics when it obviously conflicts with change risk. Devland does not return test commands or create a verification matrix.
 
 Acceptance entries describe observable conditions for the requested behavior. They need sufficient evidence before completion is claimed, but they do not require a separate acceptance-test suite or one dedicated test per criterion.
 
-The tool returns the same Devland resolver semantics as the CLI, wrapped as `devland.context/v1`.
+### `doctor`
 
-A surrounding ChatGPT runtime may obtain the two YAML files through a repository plugin/connector, but that repository access remains outside Devland. Do not duplicate GitHub or provider APIs inside this adapter.
+Accepts canonical YAML plus `repository_files`, a transient list of repository-relative text files already obtained through an external repository capability. Devland stages that snapshot in an isolated temporary project, runs the same `doctorProject` semantics as the CLI, returns the structured diagnostics, and removes the temporary data.
+
+Snapshot paths must be repository-relative, cannot contain traversal segments, and cannot override `.devland` canonical/runtime files. The tool does not fetch repository files itself.
+
+### `flow_report`
+
+Accepts canonical YAML plus optional `events_ndjson` containing normalized `devland.event/v1` records already obtained externally. It runs the same flow/correlation/outcome semantics as `devland flow`. Empty event evidence returns a valid empty report rather than a tool error.
+
+A surrounding runtime owns event collection and repository access. Devland only interprets supplied evidence.
 
 ## Local development
 
@@ -66,13 +87,13 @@ The server exposes:
 http://localhost:8787/mcp
 ```
 
-For ChatGPT development, expose that endpoint over HTTPS and connect the HTTPS `/mcp` URL in ChatGPT developer mode. The adapter intentionally has no widget/UI; the first useful increment is a read-only context tool.
+For ChatGPT development, expose that endpoint over HTTPS and connect the HTTPS `/mcp` URL in ChatGPT developer mode. The adapter intentionally has no widget/UI.
 
 ## Production deployment
 
-The repository root `Dockerfile` packages Devland Core and this adapter together because the adapter resolves context through the root `src/` runtime.
+The repository root `Dockerfile` packages Devland Core and this adapter together because all three MCP tools delegate to root `src/` semantics.
 
-Every qualifying push to `master` builds that image, exercises the root HTTP response plus MCP `initialize`, `tools/list`, and `resolve_context`, and only then publishes the same tested image as:
+Every qualifying push to `master` builds that image, exercises the root HTTP response plus MCP `initialize`, exact `tools/list`, and calls `resolve_context`, `doctor`, and `flow_report`. The same tested image is then published as:
 
 ```text
 ghcr.io/howlil/devland:latest
@@ -108,24 +129,22 @@ The expected response is `Devland context plugin`. Configure ChatGPT with:
 https://<devland-mcp-host>/mcp
 ```
 
-Keep repository access outside this service. The deployed MCP remains a stateless, read-only Devland context resolver.
+Keep repository and event-source access outside this service. The deployed MCP remains stateless and read-only.
 
 ## Expected ChatGPT flow
 
 ```text
 user requirement
       ↓
-transient work envelope (intent + acceptance + scope)
+external repository capability reads canonical/relevant evidence
       ↓
-realistic failure + verification selection when useful
+resolve_context when change guidance is needed
       ↓
-repository connector/tool reads .devland/project.yaml + .devland/state.yaml
+doctor when deterministic repository drift matters
       ↓
-Devland resolve_context + risk reconciliation
+flow_report when delivery/outcome feedback matters
       ↓
-devland.context/v1
-      ↓
-ChatGPT performs engineering work using separate repository capabilities
+ChatGPT performs engineering actions through separate repository/runtime capabilities
 ```
 
-Re-resolve context for a new change, a material change to the transient work/verification contract, or when canonical project/work state changed materially. Within one unchanged task, the resolved context may remain in the conversation as transient working context.
+The three tools are used by need, not as a mandatory ceremony sequence. Re-resolve context for a new change, a material change to the transient work/verification contract, or when canonical project/work state changed materially.

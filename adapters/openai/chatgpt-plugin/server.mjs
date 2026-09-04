@@ -7,12 +7,21 @@ import { resolvePortableContextFromYaml } from './resolve-context.mjs';
 const PORT = Number(process.env.PORT ?? 8787);
 const MCP_PATH = '/mcp';
 
+const verificationSchema = z.object({
+  criticality: z.enum(['critical', 'behavioral', 'peripheral']),
+  failure_modes: z.array(z.string().min(1)).min(1),
+  boundary: z.enum(['static', 'function', 'component', 'integration', 'contract', 'process', 'journey', 'release']),
+  cost: z.enum(['cheap', 'moderate', 'expensive']),
+  reason: z.string().min(1).optional(),
+}).strict().optional();
+
 const changeSchema = z.object({
   signals: z.array(z.string().min(1)).optional(),
   context: z.object({
     full: z.boolean().optional(),
     state: z.boolean().optional(),
   }).optional(),
+  verification: verificationSchema,
 }).optional();
 
 const workSchema = z.object({
@@ -30,7 +39,7 @@ function createDevlandServer() {
   const server = new McpServer(
     { name: 'devland-context', version: '0.1.0' },
     {
-      instructions: 'Resolve Devland engineering context from canonical project/state YAML plus optional transient work intent. Treat work and ChatGPT conversation context as transient; project.yaml and state.yaml remain canonical project memory.',
+      instructions: 'Resolve Devland engineering context from canonical project/state YAML plus optional transient work intent and verification selection. Treat work, verification selection, and ChatGPT conversation context as transient; project.yaml and state.yaml remain canonical project memory.',
     },
   );
 
@@ -38,7 +47,7 @@ function createDevlandServer() {
     'resolve_context',
     {
       title: 'Resolve Devland context',
-      description: 'Use this when engineering work needs the effective Devland workflow, policies, profiles, risk budget, and optional transient work intent for a repository. Supply the canonical .devland project and state YAML; do not invent missing project facts.',
+      description: 'Use this when engineering work needs the effective Devland workflow, policies, profiles, risk budget, optional transient work intent, and optional verification selection for a repository. Supply the canonical .devland project and state YAML; do not invent missing project facts.',
       inputSchema: {
         project_yaml: z.string().min(1),
         state_yaml: z.string().min(1),

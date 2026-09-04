@@ -20,7 +20,7 @@ const npmRunCommand = /(?:^|\n)\s*-\s*run:\s*npm\s+(?:ci|test)\b/m;
 test('package metadata is OSS-ready while npm publication remains intentionally private', async () => {
   const pkg = JSON.parse(await read('package.json'));
 
-  assert.equal(pkg.version, '0.2.0');
+  assert.match(pkg.version, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
   assert.equal(pkg.private, true);
   assert.equal(pkg.license, 'MIT');
   assert.equal(pkg.engines?.node, '>=22');

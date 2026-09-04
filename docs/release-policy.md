@@ -4,7 +4,7 @@
 
 Devland source is published under the **MIT License**. Tagged GitHub Releases are the supported downloadable distribution channel during pre-1.0 stabilization. The npm package is not published yet and `package.json` intentionally remains `"private": true` until package identity and publication intent are explicitly approved.
 
-An explicit `release/v<package-version>` branch starts the release workflow. The workflow verifies the release candidate before creating the corresponding `v<package-version>` tag and GitHub Release containing the packed package archive. Users with Node.js 22+ and pnpm may also install that pinned tag directly from GitHub.
+An explicit `release/v<package-version>` branch starts the release workflow. The workflow verifies the release candidate before creating the corresponding `v<package-version>` tag and GitHub Release containing the packed package archive. Versions with a prerelease identifier, such as `0.3.0-rc.1`, are published as GitHub prereleases. Users with Node.js 22+ and pnpm may also install that pinned tag directly from GitHub.
 
 Open-source licensing, GitHub Release distribution, and npm registry publication are separate decisions. Publishing downloadable release artifacts does not imply that an official npm package name has been approved.
 
@@ -63,7 +63,7 @@ legacy devland.project/v0 without devland.contract
 
 Migration on contract `1` is idempotent. Unknown or future contracts are rejected rather than downgraded or guessed.
 
-The current package version is `0.2.0`; this version number does not itself redefine behavioral contract `1`.
+The current package version is `0.3.0-rc.1`; this version number does not itself redefine behavioral contract `1`.
 
 ## GitHub release gate
 
@@ -75,9 +75,12 @@ Before the workflow creates the corresponding version tag or publishes a GitHub 
 - the full test suite is green on Ubuntu, Windows, and macOS;
 - the package can be packed successfully;
 - the packed archive can be installed into a clean consumer project;
-- the installed `devland` executable can run `init`, `validate`, and `context develop-change` successfully.
+- the installed `devland` executable can run `init`, `validate`, `context develop-change`, `doctor`, and `flow` successfully;
+- the MCP container release path separately builds and smoke-tests the exact three-tool read-only registry before a version-tagged image is published.
 
 Only after those checks pass may the workflow create the annotated `v<package-version>` tag and attach the packed archive to the GitHub Release. If that tag already exists, it must point to the same verified commit or the release fails. Re-running a partially completed release may update the release asset for the same verified tag, but must never move an existing version tag.
+
+A version containing `-` is a prerelease and must be marked as such in GitHub Releases. Stable aliases such as the MCP `latest` image remain owned by verified `master` pushes rather than prerelease tags.
 
 ## Public npm release gate
 

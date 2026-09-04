@@ -82,6 +82,8 @@ jobs:
           pnpm exec devland init release-smoke
           pnpm exec devland validate
           pnpm exec devland context develop-change
+          pnpm exec devland doctor
+          pnpm exec devland flow
       - uses: actions/upload-artifact@v4
         with:
           name: devland-package
@@ -129,5 +131,15 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" dist/*.tgz --clobber
           else
-            gh release create "$TAG" dist/*.tgz --verify-tag --generate-notes --title "$TAG"
+            args=("$TAG" dist/*.tgz --verify-tag --title "$TAG")
+            notes_file="docs/releases/$TAG.md"
+            if [[ -f "$notes_file" ]]; then
+              args+=(--notes-file "$notes_file")
+            else
+              args+=(--generate-notes)
+            fi
+            if [[ "$TAG" == *-* ]]; then
+              args+=(--prerelease)
+            fi
+            gh release create "${args[@]}"
           fi

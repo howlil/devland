@@ -134,7 +134,9 @@ These commands are available for dogfooding but are not considered stable produc
 | `devland eval adapters [change-json]` | Compare semantic parity across supported adapter projections. |
 | `devland event append '<json>'` | Append a validated engineering event to the local event spool. |
 | `devland ingest github '<json>'` | Normalize already-obtained GitHub evidence into Devland events. |
-| `devland flow` | Derive flow timing and evidence diagnostics from normalized events. |
+| `devland flow` | Derive delivery and outcome timing, correlation coverage, and evidence diagnostics from normalized events. |
+
+Delivery evidence stays provider-neutral and is correlated in memory; see [`docs/delivery-correlation.md`](docs/delivery-correlation.md). Outcome observations extend that loop without causal attribution or a new analytics subsystem; see [`docs/outcome-correlation.md`](docs/outcome-correlation.md).
 
 Experimental capabilities may be simplified or removed if real usage does not justify their maintenance cost.
 
@@ -190,7 +192,7 @@ transient work + .devland/project.yaml + optional current state
                repository
 ```
 
-Devland owns engineering semantics, not external-system access. Authentication, repository mutation, CI execution, deployment, and production telemetry remain the responsibility of the surrounding runtime or platform.
+Devland owns engineering semantics, not external-system access. Authentication, repository mutation, CI execution, deployment, production telemetry, and product outcome observation remain the responsibility of the surrounding runtime or platform.
 
 ## Engineering model
 

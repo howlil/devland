@@ -19,6 +19,10 @@ test('develop-change executes the v1 rapid feedback loop', async () => {
   assert.match(body, /integration.*first-class|integration.*whenever.*boundary|boundary.*integration/is);
   assert.match(body, /end-to-end|E2E/i);
   assert.match(body, /unique confidence|cheaper boundary|critical journey/is);
+  assert.match(body, /failure.*criticality.*boundary|criticality.*boundary.*proof/is);
+  assert.match(body, /proof.*gate.*separate|keep proof and gate semantics separate/is);
+  assert.match(body, /acceptance.*sufficient evidence|material acceptance conditions.*evidence/is);
+  assert.match(body, /acceptance-test suite|dedicated acceptance-test/is);
   assert.match(body, /repeat|next independently useful increment|next smallest valuable slice/i);
   assert.match(body, /fastest relevant|focused verification|fast feedback/i);
   assert.match(body, /integrate.*as soon|integrate.*promptly|frequent integration/is);
@@ -57,6 +61,7 @@ test('develop-change keeps modeling and planning conditional rather than default
   assert.match(body, /spec.*only when|create a change spec.*only when/is);
   assert.match(body, /diagram.*not a mandatory|diagram.*reasoning tool/is);
   assert.match(body, /plan.*only when|create a detailed plan only when/is);
+  assert.match(body, /verification matrix.*(?:do not|not)|do not.*verification matrix/is);
   assert.match(body, /canonical state.*not.*(?:TDD|micro|every)/is);
 });
 
@@ -100,15 +105,19 @@ test('testing policy protects critical behavior without universal TDD ceremony',
   assert.match(testing, /avoid duplicated confidence/i);
 });
 
-test('verification policy keeps default integration gates fast and risk-triggered', async () => {
+test('verification policy keeps selection compact, sufficient, and risk-triggered', async () => {
   const verification = await readText(verificationPath);
 
-  assert.match(verification, /impact and likelihood/i);
-  assert.match(verification, /cheapest high-signal/i);
-  assert.match(verification, /increase verification depth only when risk/i);
+  assert.match(verification, /realistic failure mode.*criticality.*boundary.*cheapest/is);
+  assert.match(verification, /proof and gate semantics separate|focused local proof.*repository CI gate/is);
+  assert.match(verification, /acceptance condition.*sufficient evidence/is);
+  assert.match(verification, /does not require a dedicated acceptance test|does not require.*acceptance-test/is);
+  assert.match(verification, /verification matrix.*do not|do not create a verification matrix/is);
+  assert.match(verification, /impact.*criticality|impact and likelihood/i);
+  assert.match(verification, /cheapest.*trustworthy|cheapest high-signal/i);
   assert.match(verification, /integration.*first-class|integration.*realistic failure boundary/is);
   assert.match(verification, /default.*(?:CI|integration gate).*fast|fast.*default.*(?:CI|integration gate)/is);
-  assert.match(verification, /expensive.*risk|risk.*expensive|affected scope.*expensive|release.*expensive/is);
+  assert.match(verification, /expensive.*risk|risk.*expensive|affected.*expensive|release.*expensive/is);
   assert.match(verification, /end-to-end|E2E/i);
   assert.match(verification, /not.*default.*gate|default.*gate.*not/is);
   assert.match(verification, /do not duplicate the same confidence/i);

@@ -17,6 +17,7 @@
         "work.accepted",
         "work.started",
         "change.committed",
+        "change.merged",
         "review.opened",
         "review.completed",
         "ci.started",
@@ -68,6 +69,10 @@
     {
       "if": { "properties": { "type": { "const": "change.committed" } }, "required": ["type"] },
       "then": { "required": ["change_id", "commit_sha"] }
+    },
+    {
+      "if": { "properties": { "type": { "const": "change.merged" } }, "required": ["type"] },
+      "then": { "required": ["change_id"] }
     },
     {
       "if": { "properties": { "type": { "enum": ["review.opened", "review.completed", "ci.started", "ci.completed"] } }, "required": ["type"] },

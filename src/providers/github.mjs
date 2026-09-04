@@ -22,6 +22,10 @@ function changeId(repository, record) {
   return `github:${repository}:commit:${sha}`;
 }
 
+function prChangeId(repository, number) {
+  return `github:${repository}:pr:${number}`;
+}
+
 function eventBase(repository, record, suffix, type) {
   return {
     schema: 'devland.event/v1',
@@ -32,47 +36,74 @@ function eventBase(repository, record, suffix, type) {
   };
 }
 
+function attachOptionalWork(event, record) {
+  if (record.work_id !== undefined && record.work_id !== null && record.work_id !== '') {
+    event.work_id = String(record.work_id);
+  }
+  return event;
+}
+
+function attachOptionalDeploymentLinkage(event, repository, record) {
+  attachOptionalWork(event, record);
+  if (record.pull_request_number !== undefined && record.pull_request_number !== null) {
+    event.change_id = prChangeId(repository, record.pull_request_number);
+  }
+  if (record.sha !== undefined && record.sha !== null && record.sha !== '') {
+    event.commit_sha = String(record.sha);
+  }
+  return event;
+}
+
 function normalizeRecord(repository, record) {
   switch (record?.kind) {
     case 'commit': {
       const sha = String(required(record, 'sha'));
-      return {
+      return [attachOptionalWork({
         ...eventBase(repository, record, `commit:${sha}`, 'change.committed'),
         change_id: changeId(repository, record),
         commit_sha: sha,
-      };
+      }, record)];
     }
     case 'pull_request.opened': {
       const number = required(record, 'number');
-      return {
+      return [attachOptionalWork({
         ...eventBase(repository, record, `pr:${number}:review-opened`, 'review.opened'),
-        change_id: `github:${repository}:pr:${number}`,
-      };
+        change_id: prChangeId(repository, number),
+      }, record)];
     }
     case 'pull_request.merged': {
       const number = required(record, 'number');
-      return {
+      const change_id = prChangeId(repository, number);
+      const reviewCompleted = attachOptionalWork({
         ...eventBase(repository, record, `pr:${number}:review-completed`, 'review.completed'),
-        change_id: `github:${repository}:pr:${number}`,
-      };
+        change_id,
+      }, record);
+      const merged = attachOptionalWork({
+        ...eventBase(repository, record, `pr:${number}:change-merged`, 'change.merged'),
+        change_id,
+      }, record);
+      if (record.merge_commit_sha !== undefined && record.merge_commit_sha !== null && record.merge_commit_sha !== '') {
+        merged.commit_sha = String(record.merge_commit_sha);
+      }
+      return [reviewCompleted, merged];
     }
     case 'workflow_run.started': {
       const runId = required(record, 'run_id');
       const pullRequest = required(record, 'pull_request_number');
-      return {
+      return [attachOptionalWork({
         ...eventBase(repository, record, `workflow-run:${runId}:ci-started`, 'ci.started'),
-        change_id: `github:${repository}:pr:${pullRequest}`,
-      };
+        change_id: prChangeId(repository, pullRequest),
+      }, record)];
     }
     case 'workflow_run.completed': {
       const runId = required(record, 'run_id');
       const pullRequest = required(record, 'pull_request_number');
-      const event = {
+      const event = attachOptionalWork({
         ...eventBase(repository, record, `workflow-run:${runId}:ci-completed`, 'ci.completed'),
-        change_id: `github:${repository}:pr:${pullRequest}`,
-      };
+        change_id: prChangeId(repository, pullRequest),
+      }, record);
       if (record.conclusion !== undefined) event.data = { conclusion: record.conclusion };
-      return event;
+      return [event];
     }
     case 'deployment.started':
     case 'deployment.succeeded':
@@ -82,18 +113,15 @@ function normalizeRecord(repository, record) {
       const environment = String(required(record, 'environment'));
       const type = record.kind;
       const suffix = type === 'recovery.succeeded' ? 'recovered' : type.split('.')[1];
-      const event = {
+      const event = attachOptionalDeploymentLinkage({
         ...eventBase(repository, record, `deployment:${deploymentId}:${environment}:${suffix}`, type),
         deployment_id: `github:${repository}:deployment:${deploymentId}`,
         environment,
-      };
-      if (record.work_id !== undefined && record.work_id !== null && record.work_id !== '') {
-        event.work_id = String(record.work_id);
-      }
+      }, repository, record);
       if (type === 'deployment.succeeded' && !event.work_id) {
         throw new Error('GitHub evidence deployment.succeeded requires work_id');
       }
-      return event;
+      return [event];
     }
     default:
       throw new Error(`Unsupported GitHub evidence kind: ${record?.kind ?? 'missing'}`);
@@ -103,5 +131,5 @@ function normalizeRecord(repository, record) {
 export function normalizeGitHubEvidence(payload) {
   const repository = repositoryName(payload);
   if (!Array.isArray(payload?.records)) throw new Error('GitHub evidence requires records array');
-  return payload.records.map((record) => normalizeRecord(repository, record));
+  return payload.records.flatMap((record) => normalizeRecord(repository, record));
 }

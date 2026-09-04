@@ -1,3 +1,4 @@
+import { correlateDeliveryEvents } from './correlation.mjs';
 import { readEngineeringEvents } from './events.mjs';
 import { validateCanonical } from './runtime.mjs';
 
@@ -8,6 +9,15 @@ const METRIC_SPECS = [
   { name: 'deployment_latency', start: 'deployment.started', end: 'deployment.succeeded', keys: ['deployment_id', 'environment'] },
   { name: 'failed_deployment_recovery', start: 'deployment.failed', end: 'recovery.succeeded', keys: ['deployment_id', 'environment'] },
 ];
+
+const DELIVERY_METRIC_SPECS = [
+  { name: 'accept_to_start', start: 'work.accepted', end: 'work.started', keys: ['work_id'], sourceScoped: false },
+  { name: 'start_to_change', start: 'work.started', end: 'change.committed', keys: ['work_id'], sourceScoped: false },
+  { name: 'change_to_merge', start: 'change.committed', end: 'change.merged', keys: ['change_id'], sourceScoped: false },
+  { name: 'merge_to_production', start: 'change.merged', end: 'deployment.succeeded', keys: ['change_id'], productionEnd: true, sourceScoped: false },
+];
+
+const ALL_METRIC_SPECS = [...METRIC_SPECS, ...DELIVERY_METRIC_SPECS];
 
 const BOTTLENECK_METRICS = new Set([
   'review_wait',
@@ -42,12 +52,12 @@ function includeEvent(event, spec, productionEnvironments) {
 }
 
 function hasObservedLifecycleEvidence(events, productionEnvironments) {
-  return events.some((event) => METRIC_SPECS.some((spec) =>
+  return events.some((event) => ALL_METRIC_SPECS.some((spec) =>
     includeEvent(event, spec, productionEnvironments) && correlationKey(event, spec) !== null
   ));
 }
 
-function pairDurations(events, spec, productionEnvironments) {
+function observationAccumulator(events, spec, productionEnvironments) {
   const groups = new Map();
   const observedSources = new Set();
   let observedEvents = 0;
@@ -74,11 +84,26 @@ function pairDurations(events, spec, productionEnvironments) {
     groups.set(correlation, group);
   }
 
+  return {
+    groups,
+    observedEvents,
+    observedSources: [...observedSources].sort(),
+    observedWindow: firstObserved && lastObserved
+      ? {
+          first_occurred_at: firstObserved.value,
+          last_occurred_at: lastObserved.value,
+        }
+      : null,
+  };
+}
+
+function pairDurations(events, spec, productionEnvironments) {
+  const observed = observationAccumulator(events, spec, productionEnvironments);
   const durations = [];
   let unmatchedStarts = 0;
   let unmatchedEnds = 0;
 
-  for (const group of groups.values()) {
+  for (const group of observed.groups.values()) {
     const ordered = [...group].sort((a, b) => timestamp(a) - timestamp(b));
     const pendingStarts = [];
 
@@ -105,14 +130,49 @@ function pairDurations(events, spec, productionEnvironments) {
     durations,
     unmatchedStarts,
     unmatchedEnds,
-    observedEvents,
-    observedSources: [...observedSources].sort(),
-    observedWindow: firstObserved && lastObserved
-      ? {
-          first_occurred_at: firstObserved.value,
-          last_occurred_at: lastObserved.value,
-        }
-      : null,
+    observedEvents: observed.observedEvents,
+    observedSources: observed.observedSources,
+    observedWindow: observed.observedWindow,
+  };
+}
+
+function pairMilestoneDurations(events, spec, productionEnvironments) {
+  const observed = observationAccumulator(events, spec, productionEnvironments);
+  const durations = [];
+  let unmatchedStarts = 0;
+  let unmatchedEnds = 0;
+
+  for (const group of observed.groups.values()) {
+    const ordered = [...group].sort((a, b) => timestamp(a) - timestamp(b));
+    const starts = ordered.filter((event) => event.type === spec.start);
+    const ends = ordered.filter((event) => event.type === spec.end);
+
+    if (starts.length === 0) {
+      if (ends.length > 0) unmatchedEnds += 1;
+      continue;
+    }
+    if (ends.length === 0) {
+      unmatchedStarts += 1;
+      continue;
+    }
+
+    const startedAt = timestamp(starts[0]);
+    const ended = ends.find((event) => timestamp(event) >= startedAt);
+    if (!ended) {
+      unmatchedStarts += 1;
+      unmatchedEnds += 1;
+      continue;
+    }
+    durations.push(timestamp(ended) - startedAt);
+  }
+
+  return {
+    durations,
+    unmatchedStarts,
+    unmatchedEnds,
+    observedEvents: observed.observedEvents,
+    observedSources: observed.observedSources,
+    observedWindow: observed.observedWindow,
   };
 }
 
@@ -149,13 +209,28 @@ function evidenceStatus(incomplete, observedLifecycleEvidence) {
 
 export function calculateFlowMetrics(events, { productionEnvironments = [] } = {}) {
   const production = new Set(productionEnvironments);
+  const correlation = correlateDeliveryEvents(events);
+  const resolvedEvents = correlation.events;
   const metrics = {};
   const incomplete = {};
   const metricEvidence = {};
   const metricSources = {};
   const metricWindows = {};
+
   for (const spec of METRIC_SPECS) {
-    const paired = pairDurations(events, spec, production);
+    const paired = pairDurations(resolvedEvents, spec, production);
+    metrics[spec.name] = aggregate(paired.durations);
+    incomplete[spec.name] = {
+      unmatched_starts: paired.unmatchedStarts,
+      unmatched_ends: paired.unmatchedEnds,
+    };
+    metricEvidence[spec.name] = metricEvidenceStatus(paired);
+    metricSources[spec.name] = paired.observedSources;
+    metricWindows[spec.name] = paired.observedWindow;
+  }
+
+  for (const spec of DELIVERY_METRIC_SPECS) {
+    const paired = pairMilestoneDurations(resolvedEvents, spec, production);
     metrics[spec.name] = aggregate(paired.durations);
     incomplete[spec.name] = {
       unmatched_starts: paired.unmatchedStarts,
@@ -182,7 +257,11 @@ export function calculateFlowMetrics(events, { productionEnvironments = [] } = {
     metric_sources: metricSources,
     metric_windows: metricWindows,
     coverage_status: coverageStatus(metricEvidence),
-    evidence_status: evidenceStatus(incomplete, hasObservedLifecycleEvidence(events, production)),
+    evidence_status: evidenceStatus(incomplete, hasObservedLifecycleEvidence(resolvedEvents, production)),
+    correlation: {
+      coverage: correlation.coverage,
+      diagnostics: correlation.diagnostics,
+    },
   };
 }
 
@@ -202,6 +281,7 @@ export async function flowReport(projectRoot = process.cwd()) {
     metric_windows,
     coverage_status,
     evidence_status,
+    correlation,
   } = calculateFlowMetrics(events, {
     productionEnvironments: canonical.project.delivery?.production_environments ?? [],
   });
@@ -213,6 +293,7 @@ export async function flowReport(projectRoot = process.cwd()) {
     metric_sources,
     metric_windows,
     metrics,
+    correlation,
     bottleneck,
     incomplete,
   };

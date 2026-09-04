@@ -82,14 +82,14 @@ test('concurrent provider batches serialize without dropping evidence', async ()
   }
 });
 
-test('devland ingest github reconstructs a fresh local evidence spool from provider records', async () => {
+test('devland ingest github reconstructs review and merge facts from provider records', async () => {
   const root = await createTarget();
   try {
     const payload = {
       repository: 'howlil/devland',
       records: [
         { kind: 'pull_request.opened', number: 22, occurred_at: '2026-08-25T00:01:00Z' },
-        { kind: 'pull_request.merged', number: 22, occurred_at: '2026-08-25T00:05:00Z' },
+        { kind: 'pull_request.merged', number: 22, occurred_at: '2026-08-25T00:05:00Z', merge_commit_sha: 'merge22' },
       ],
     };
 
@@ -97,9 +97,11 @@ test('devland ingest github reconstructs a fresh local evidence spool from provi
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const output = JSON.parse(result.stdout);
     assert.equal(output.provider, 'github');
-    assert.equal(output.normalized_events, 2);
-    assert.equal(output.appended, 2);
-    assert.equal((await readEngineeringEvents(root)).length, 2);
+    assert.equal(output.normalized_events, 3);
+    assert.equal(output.appended, 3);
+    const events = await readEngineeringEvents(root);
+    assert.equal(events.length, 3);
+    assert.deepEqual(events.map((value) => value.type), ['review.opened', 'review.completed', 'change.merged']);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

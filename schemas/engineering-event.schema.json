@@ -85,6 +85,26 @@
     {
       "if": { "properties": { "type": { "const": "deployment.succeeded" } }, "required": ["type"] },
       "then": { "required": ["deployment_id", "environment", "work_id"] }
+    },
+    {
+      "if": { "properties": { "type": { "const": "outcome.observed" } }, "required": ["type"] },
+      "then": {
+        "required": ["work_id"],
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "enum": ["positive", "neutral", "negative", "unknown"]
+              },
+              "observation": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }

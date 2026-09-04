@@ -17,7 +17,13 @@ const DELIVERY_METRIC_SPECS = [
   { name: 'merge_to_production', start: 'change.merged', end: 'deployment.succeeded', keys: ['change_id'], productionEnd: true, sourceScoped: false },
 ];
 
-const ALL_METRIC_SPECS = [...METRIC_SPECS, ...DELIVERY_METRIC_SPECS];
+const OUTCOME_METRIC_SPECS = [
+  { name: 'production_to_outcome', start: 'deployment.succeeded', end: 'outcome.observed', keys: ['work_id'], productionStart: true, sourceScoped: false },
+  { name: 'idea_to_outcome', start: 'work.accepted', end: 'outcome.observed', keys: ['work_id'], sourceScoped: false },
+];
+
+const FLOW_EVIDENCE_SPECS = [...METRIC_SPECS, ...DELIVERY_METRIC_SPECS];
+const OUTCOME_METRIC_NAMES = new Set(OUTCOME_METRIC_SPECS.map((spec) => spec.name));
 
 const BOTTLENECK_METRICS = new Set([
   'review_wait',
@@ -45,6 +51,9 @@ function correlationKey(event, spec) {
 
 function includeEvent(event, spec, productionEnvironments) {
   if (event.type !== spec.start && event.type !== spec.end) return false;
+  if (spec.productionStart && event.type === spec.start) {
+    return productionEnvironments.has(event.environment);
+  }
   if (spec.productionEnd && event.type === spec.end) {
     return productionEnvironments.has(event.environment);
   }
@@ -52,7 +61,7 @@ function includeEvent(event, spec, productionEnvironments) {
 }
 
 function hasObservedLifecycleEvidence(events, productionEnvironments) {
-  return events.some((event) => ALL_METRIC_SPECS.some((spec) =>
+  return events.some((event) => FLOW_EVIDENCE_SPECS.some((spec) =>
     includeEvent(event, spec, productionEnvironments) && correlationKey(event, spec) !== null
   ));
 }
@@ -201,48 +210,46 @@ function coverageStatus(metricEvidence) {
 
 function evidenceStatus(incomplete, observedLifecycleEvidence) {
   if (!observedLifecycleEvidence) return 'empty';
-  const hasIncompleteLifecycle = Object.values(incomplete).some(
-    (value) => value.unmatched_starts > 0 || value.unmatched_ends > 0,
+  const hasIncompleteLifecycle = Object.entries(incomplete).some(
+    ([metric, value]) => !OUTCOME_METRIC_NAMES.has(metric)
+      && (value.unmatched_starts > 0 || value.unmatched_ends > 0),
   );
   return hasIncompleteLifecycle ? 'partial' : 'complete';
 }
 
+function recordMetric(report, spec, paired) {
+  report.metrics[spec.name] = aggregate(paired.durations);
+  report.incomplete[spec.name] = {
+    unmatched_starts: paired.unmatchedStarts,
+    unmatched_ends: paired.unmatchedEnds,
+  };
+  report.metricEvidence[spec.name] = metricEvidenceStatus(paired);
+  report.metricSources[spec.name] = paired.observedSources;
+  report.metricWindows[spec.name] = paired.observedWindow;
+}
+
 export function calculateFlowMetrics(events, { productionEnvironments = [] } = {}) {
   const production = new Set(productionEnvironments);
-  const correlation = correlateDeliveryEvents(events);
+  const correlation = correlateDeliveryEvents(events, { productionEnvironments });
   const resolvedEvents = correlation.events;
-  const metrics = {};
-  const incomplete = {};
-  const metricEvidence = {};
-  const metricSources = {};
-  const metricWindows = {};
+  const report = {
+    metrics: {},
+    incomplete: {},
+    metricEvidence: {},
+    metricSources: {},
+    metricWindows: {},
+  };
 
   for (const spec of METRIC_SPECS) {
-    const paired = pairDurations(resolvedEvents, spec, production);
-    metrics[spec.name] = aggregate(paired.durations);
-    incomplete[spec.name] = {
-      unmatched_starts: paired.unmatchedStarts,
-      unmatched_ends: paired.unmatchedEnds,
-    };
-    metricEvidence[spec.name] = metricEvidenceStatus(paired);
-    metricSources[spec.name] = paired.observedSources;
-    metricWindows[spec.name] = paired.observedWindow;
+    recordMetric(report, spec, pairDurations(resolvedEvents, spec, production));
   }
 
-  for (const spec of DELIVERY_METRIC_SPECS) {
-    const paired = pairMilestoneDurations(resolvedEvents, spec, production);
-    metrics[spec.name] = aggregate(paired.durations);
-    incomplete[spec.name] = {
-      unmatched_starts: paired.unmatchedStarts,
-      unmatched_ends: paired.unmatchedEnds,
-    };
-    metricEvidence[spec.name] = metricEvidenceStatus(paired);
-    metricSources[spec.name] = paired.observedSources;
-    metricWindows[spec.name] = paired.observedWindow;
+  for (const spec of [...DELIVERY_METRIC_SPECS, ...OUTCOME_METRIC_SPECS]) {
+    recordMetric(report, spec, pairMilestoneDurations(resolvedEvents, spec, production));
   }
 
   let bottleneck = null;
-  for (const [metric, value] of Object.entries(metrics)) {
+  for (const [metric, value] of Object.entries(report.metrics)) {
     if (!BOTTLENECK_METRICS.has(metric) || value.samples === 0) continue;
     if (!bottleneck || value.average_ms > bottleneck.average_ms) {
       bottleneck = { metric, average_ms: value.average_ms };
@@ -250,18 +257,22 @@ export function calculateFlowMetrics(events, { productionEnvironments = [] } = {
   }
 
   return {
-    metrics,
+    metrics: report.metrics,
     bottleneck,
-    incomplete,
-    metric_evidence: metricEvidence,
-    metric_sources: metricSources,
-    metric_windows: metricWindows,
-    coverage_status: coverageStatus(metricEvidence),
-    evidence_status: evidenceStatus(incomplete, hasObservedLifecycleEvidence(resolvedEvents, production)),
+    incomplete: report.incomplete,
+    metric_evidence: report.metricEvidence,
+    metric_sources: report.metricSources,
+    metric_windows: report.metricWindows,
+    coverage_status: coverageStatus(report.metricEvidence),
+    evidence_status: evidenceStatus(
+      report.incomplete,
+      hasObservedLifecycleEvidence(resolvedEvents, production),
+    ),
     correlation: {
       coverage: correlation.coverage,
       diagnostics: correlation.diagnostics,
     },
+    outcomes: correlation.outcomes,
   };
 }
 
@@ -282,6 +293,7 @@ export async function flowReport(projectRoot = process.cwd()) {
     coverage_status,
     evidence_status,
     correlation,
+    outcomes,
   } = calculateFlowMetrics(events, {
     productionEnvironments: canonical.project.delivery?.production_environments ?? [],
   });
@@ -294,6 +306,7 @@ export async function flowReport(projectRoot = process.cwd()) {
     metric_windows,
     metrics,
     correlation,
+    outcomes,
     bottleneck,
     incomplete,
   };
